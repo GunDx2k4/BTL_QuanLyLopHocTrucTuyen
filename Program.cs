@@ -3,6 +3,7 @@ using BTL_QuanLyLopHocTrucTuyen.Authorizations;
 using BTL_QuanLyLopHocTrucTuyen.Data;
 using BTL_QuanLyLopHocTrucTuyen.Repositories;
 using BTL_QuanLyLopHocTrucTuyen.Repositories.MySql;
+using BTL_QuanLyLopHocTrucTuyen.Repositories.SqlServer;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.CookiePolicy;
@@ -25,17 +26,17 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddSingleton<IAuthorizationHandler, UserPermissionAuthorizationHandler>();
 
-builder.Services.AddDbContext<MySqlDbContext>(options =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("MySqlConnection");
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-});
+// builder.Services.AddDbContext<MySqlDbContext>(options =>
+// {
+//     var connectionString = builder.Configuration.GetConnectionString("MySqlConnection");
+//     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+// });
 
-// builder.Services.AddDbContext<SqlServerDbContext>(options =>
-//     options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnection")));
+builder.Services.AddDbContext<SqlServerDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnection")));
 
-builder.Services.AddScoped<ICourseRepository, MySqlCourseRepository>();
-builder.Services.AddScoped<IUserRepository, MySqlUserRepository>();
+builder.Services.AddScoped<ICourseRepository, SqlServerCourseRepository>();
+builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
 
 var app = builder.Build();
 

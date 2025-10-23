@@ -8,9 +8,12 @@ public abstract class ApplicationDbContext : DbContext
 {
     public DbSet<Course> Courses { get; set; }
     public DbSet<User> Users { get; set; }
-
+    public DbSet<Lesson> Lessons { get; set; }
+    public DbSet<Assignment> Assignments { get; set; }
+    public DbSet<Material> Materials { get; set; }
+    
     protected ApplicationDbContext(DbContextOptions options) : base(options)
-    {
+    {  
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
