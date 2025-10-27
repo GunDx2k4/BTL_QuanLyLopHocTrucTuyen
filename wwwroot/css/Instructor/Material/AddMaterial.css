@@ -1,0 +1,117 @@
+/* ===== Tổng thể form ===== */
+.content-main {
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    margin: 20px auto;
+    padding: 30px 40px;
+    max-width: 900px;
+    width: 95%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    transition: all 0.3s ease;
+}
+
+/* Tiêu đề form */
+.content-main h3 {
+    color: #0d6efd;
+    font-weight: 600;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+/* ===== Label & Input ===== */
+.form-label {
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 6px;
+}
+
+.form-control, 
+textarea.form-control {
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 15px;
+    border: 1px solid #ced4da;
+    transition: 0.25s ease;
+}
+
+/* Khi focus vào input */
+.form-control:focus, 
+textarea.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13,110,253,0.2);
+    outline: none;
+}
+
+/* Textarea */
+textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+}
+
+
+
+.select2-container--open .select2-dropdown {
+    top: 100% !important;
+    bottom: auto !important;
+}
+
+
+
+
+/* ===== Nút Lưu & Quay lại ===== */
+.btn {
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 15px;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border: none;
+}
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    transform: scale(1.03);
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    border: none;
+}
+.btn-secondary:hover {
+    background-color: #5c636a;
+    transform: scale(1.03);
+}
+
+/* Icon trong nút */
+.btn i {
+    margin-right: 5px;
+}
+
+/* ===== Validation ===== */
+.text-danger {
+    font-size: 14px;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+    .content-main {
+        padding: 20px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    .btn {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 10px;
+    }
+}

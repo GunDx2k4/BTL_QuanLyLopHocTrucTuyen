@@ -1,0 +1,157 @@
+/* ======= Tổng thể layout ======= */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100vh; 
+    font-family: "Segoe UI", Arial, sans-serif;
+    background-color: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* ======= Nội dung chính dưới header ======= */
+.content-main {
+    display: flex;
+    gap:20px;
+    height: 100%;
+    margin: 10px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,4);
+    overflow-y: auto;  
+    flex-wrap: wrap;
+}
+.content-main .status {
+    flex: 2; /* chiếm 2 phần không gian */
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    min-width: 250px; /* tránh bị co quá nhỏ */
+    line-height: 2;
+    font-size: 16px;
+    color: #333;
+}
+.content-main .right-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.right-column .btn-quick{
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    flex: 1;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.right-column .btn-quick button{
+    background: #a0a0a0;
+    color: #fff;
+    border: none;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.right-column .btn-quick button:hover{
+    background-color: #0d6efd;
+    color: #fff;
+    transform : scale(1.03);
+}
+
+.right-column .upcoming-events {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    padding: 15px ;
+    font-size: 16px;
+}
+
+/* ✅ Dòng đầu tiên chứa tiêu đề + link */
+.upcoming-events .events-header {
+    display: flex;
+    justify-content: space-between; /* h5 bên trái, link bên phải */
+    align-items: center;
+}
+
+.upcoming-events h5 {
+    font-weight: 600;
+    margin: 0;
+}
+
+.upcoming-events a {
+    text-decoration: none;
+    color: #0d6efd;
+    font-weight: 500;
+    font-size: 15px;
+    transition: color 0.2s ease;
+}
+
+.upcoming-events a:hover {
+    color: #0b5ed7;
+    text-decoration: underline;
+}
+
+/* ======= Phần responsive cho mobile ======= */
+@media (max-width: 768px) {
+    .content-main {
+        display: flex !important;
+        flex-direction: column !important; /* ép layout dọc */
+        align-items: stretch !important;
+        gap: 15px;
+        flex-wrap: nowrap !important;
+    }
+
+    /* Toàn bộ các khối trong content-main */
+    .content-main .status,
+    .content-main .btn-quick,
+    .content-main .upcoming-events {
+        width: 100% !important;
+        margin: 0 !important;
+        min-width: 100% !important;
+    }
+
+    .content-main .btn-quick {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px;
+    }
+
+    .content-main .btn-quick button {
+        width: 100% !important;
+        padding: 12px;
+        border-radius: 8px;
+    }
+
+    /* Nếu muốn “Sắp diễn ra” nổi bật hơn ở mobile */
+    .content-main .upcoming-events {
+        order: 3; /* đặt nó xuống cuối nếu cần */
+        text-align: center;
+        padding: 15px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .content-main .upcoming-events hr {
+        width: 60%;
+        margin: 10px auto;
+        border: none;
+        height: 2px;
+        background: #ccc;
+        border-radius: 1px;
+    }
+}
+
+
+
+
+
+

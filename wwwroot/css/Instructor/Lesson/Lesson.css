@@ -1,0 +1,221 @@
+/* ======= Tổng thể ======= */
+.content-main {
+    background-color: #ffffff;
+    margin: 15px;
+    padding: 20px 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 100px);
+}
+
+/* ======= Header ======= */
+.header-lesson {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.header-lesson h5 {
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+.header-lesson label {
+    display: flex;
+    align-items: center;
+    background: #f1f3f5;
+    border: 1px solid #dee2e6;
+    border-radius: 30px;
+    padding: 6px 14px;
+    gap: 8px;
+    flex: 1;
+    max-width: 400px;
+}
+
+.header-lesson label i {
+    color: #6c757d;
+    font-size: 18px;
+}
+
+.search-lesson {
+    border: none;
+    outline: none;
+    background: transparent;
+    width: 100%;
+    font-size: 15px;
+    color: #333;
+}
+
+.search-lesson::placeholder {
+    color: #999;
+}
+
+.header-lesson .btn {
+    background-color: #0d6efd;
+    color: #fff;
+    border-radius: 8px;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease-in-out;
+}
+
+.header-lesson .btn:hover {
+    background-color: #0b5ed7;
+    transform: scale(1.05);
+}
+
+.header-lesson .btn a {
+    color: #fff;
+    text-decoration: none;
+}
+
+/* ======= Danh sách card ======= */
+.listlesson {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: 100%;
+}
+
+/* ======= Card bài học nằm ngang ======= */
+.lesson-card {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 14px 18px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.lesson-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+}
+
+/* ======= Tiêu đề & trạng thái ======= */
+.lesson-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    
+    flex: 1;
+}
+
+.lesson-header h6 {
+    margin: 0;
+    font-weight: 600;
+    color: #222;
+    font-size: 17px;
+    white-space: nowrap;         /* Không xuống dòng */
+    overflow: hidden;            /* Ẩn phần bị tràn */
+    text-overflow: ellipsis;     /* Hiển thị “...” */
+    max-width: 300px;   
+    
+}
+
+.status {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    color: white;
+}
+
+.status.planned { background-color: #6c757d; }
+.status.active { background-color: #0d6efd; }
+.status.completed { background-color: #198754; }
+.status.canceled { background-color: #dc3545; }
+
+/* ======= Thông tin chi tiết ======= */
+.lesson-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+}
+
+.lesson-info p {
+    margin: 0;
+    color: #555;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.lesson-info i {
+    color: #0d6efd;
+}
+
+/* ======= Nút hành động ======= */
+.lesson-actions {
+    display: flex;
+    gap: 10px;
+}
+.lesson-actions a{
+    text-decoration: none;
+    color: #333
+}
+
+.lesson-actions button {
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.btn-view { background-color: #0d6efd; color: white; }
+.btn-edit { background-color: #ffc107; color: #000; }
+.btn-delete { background-color: #dc3545; color: white; }
+
+.lesson-actions button:hover {
+    transform: scale(1.05);
+    opacity: 0.9;
+}
+.custom-toast {
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-align: center;
+    letter-spacing: 0.3px;
+}
+
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+    .content-main {
+        padding: 15px;
+        height: auto;
+    }
+
+    .listlesson {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .lesson-actions {
+        flex-direction: column;
+        gap: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .listlesson {
+        grid-template-columns: 1fr;
+    }
+}
+    
