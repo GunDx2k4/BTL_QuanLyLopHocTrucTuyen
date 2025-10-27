@@ -35,7 +35,7 @@ public abstract class ApplicationDbContext : DbContext
             .HasOne(t => t.Owner)
             .WithOne()
             .HasForeignKey<Tenant>(t => t.OwnerId)
-            .OnDelete(DeleteBehavior.Restrict); // Không cho xóa Owner nếu còn Tenant
+            .OnDelete(DeleteBehavior.Cascade); // Không cho xóa Owner nếu còn Tenant
 
         // Tenant -> Users (1:N)
         modelBuilder.Entity<User>()

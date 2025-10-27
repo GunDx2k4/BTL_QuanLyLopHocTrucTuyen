@@ -34,6 +34,13 @@ public class SeedData
                 PasswordHash = SecurityHelper.HashPassword("123456"),
             };
             
+            var userInstructor = new User
+            {
+                FullName = "Nguyen Van C",
+                Email = "nguyenvanc@gmail.com",
+                PasswordHash = SecurityHelper.HashPassword("123456"),
+            };
+            
             var userManager2 = new User
             {
                 FullName = "Nguyen Van B",
@@ -64,16 +71,22 @@ public class SeedData
                 Description = "Manager tenant Demo2",
                 Permissions = UserPermission.Manager,
             };
+            var instructor = new Role
+            {
+                Name = "Instructor",
+                Description = "Instructor role",
+                Permissions = UserPermission.Instructor,
+            };
 
             if (!context.Roles.Any())
             {
-                context.Roles.AddRange(adminRole, manager, manager2);
+                context.Roles.AddRange(adminRole, manager, manager2, instructor);
                 context.SaveChanges();
             }
             
             if (!context.Users.Any())
             {
-                context.Users.AddRange(userAdmin, userManager, userManager2);
+                context.Users.AddRange(userAdmin, userManager, userManager2, userInstructor);
                 context.SaveChanges();
             }
 
@@ -82,12 +95,15 @@ public class SeedData
                 context.Tenants.AddRange(tenantDemo, tenantDemo2);
                 manager.TenantId = tenantDemo.Id;
                 manager2.TenantId = tenantDemo2.Id;
-                context.Roles.UpdateRange(manager, manager2);
+                instructor.TenantId = tenantDemo.Id;
+                context.Roles.UpdateRange(manager, manager2, instructor);
                 userManager.RoleId = manager.Id;
                 userManager2.RoleId = manager2.Id;
+                userInstructor.RoleId = instructor.Id;
                 userManager.TenantId = tenantDemo.Id;
                 userManager2.TenantId = tenantDemo2.Id;
-                context.Users.UpdateRange(userManager, userManager2);
+                userInstructor.TenantId = tenantDemo.Id;
+                context.Users.UpdateRange(userManager, userManager2, userInstructor);
                 context.SaveChanges();
 
             }

@@ -1,0 +1,29 @@
+@{
+    ViewData["Title"] = "Instructor Home";
+    Layout = "~/Views/Instructor/Shared/_InstructorLayout.cshtml";
+}
+
+<div class="content-main">
+    <div class="status">
+        <p>Số khóa học đang dạy :</p>
+        <p>Tổng số bài học đã tạo :</p>
+        <p>Tổng số tài liệu đã đăng :</p>
+        <p>Tổng số bài tập đã giao :</p>
+        <p>Số bài đã chấm / chưa chấm :</p>
+    </div>
+    <div class="right-column">
+        <div class="btn-quick">
+            <button class="btn btn-primary">Tạo bài học mới</button>
+            <button class="btn btn-primary">Up tài liệu</button>
+            <button class="btn btn-primary">Tạo bài tập mới</button>
+        </div>
+        <div class="upcoming-events">
+            <div class="events-header">
+                <h5>Sắp diễn ra</h5>
+                <a href="#"><i class="bi bi-calendar2-event"></i> Xem lịch</a>
+            </div>
+            <hr>
+            <p>Không có sự kiện nào</p>
+        </div>
+    </div>
+</div>
