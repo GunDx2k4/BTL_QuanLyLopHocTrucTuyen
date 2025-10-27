@@ -1,0 +1,103 @@
+﻿@{
+    ViewData["Title"] = "Đăng nhập";
+}
+
+<div class="d-flex align-items-center justify-content-center min-vh-75 py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8">
+                <div class="card shadow-sm overflow-hidden border-0 rounded-4">
+                    <div class="row g-0">
+                        <!-- Cột hình minh họa -->
+                        <div class="col-12 col-md-6 d-none d-md-flex flex-column justify-content-center align-items-center text-center p-4" 
+                             style="background:linear-gradient(180deg,#f8fafc,#eef2f6);">
+                            <h4 class="fw-bold text-dark mb-2">Chào mừng bạn trở lại 👋</h4>
+                            <p class="text-muted mb-4">Đăng nhập để tiếp tục quản lý lớp học của bạn</p>
+                            <img src="~/image.png" alt="login-illustration" 
+                                 class="img-fluid" style="max-height:220px;object-fit:contain;" 
+                                 onerror="this.style.display='none'" />
+                        </div>
+
+                        <!-- Cột form đăng nhập -->
+                        <div class="col-12 col-md-6 bg-white">
+                            <div class="card-body p-4 p-lg-5">
+                                <h5 class="card-title mb-3 fw-bold text-dark">Đăng nhập tài khoản</h5>
+
+                                <div id="loginAlert" class="alert alert-danger d-none" role="alert"></div>
+
+                                <form id="loginForm" onsubmit="login(event)" novalidate>
+                                    <div class="mb-3">
+                                        <label for="email" class="form-label fw-semibold">Địa chỉ Email</label>
+                                        <input type="email" class="form-control" id="email" name="email" 
+                                               placeholder="abc@example.com" required />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="password" class="form-label fw-semibold">Mật khẩu</label>
+                                        <input type="password" class="form-control" id="password" name="password" 
+                                               placeholder="Nhập mật khẩu của bạn" required />
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center mb-3 small">
+                                        <a href="#" class="text-primary text-decoration-none">Quên mật khẩu?</a>
+                                    </div>
+
+                                    <div class="d-grid mb-3">
+                                        <button type="submit" class="btn btn-primary fw-semibold py-2">
+                                            Đăng nhập
+                                        </button>
+                                    </div>
+
+                                    <div class="text-center small">
+                                        Chưa có tài khoản?
+                                        <a asp-controller="Home" asp-action="Register" class="text-primary fw-semibold">
+                                            Đăng ký ngay
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const login = (event) => {
+        event.preventDefault();
+
+        const alertEl = document.getElementById('loginAlert');
+        alertEl.classList.add('d-none');
+
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        if (!email || !password) {
+            alertEl.textContent = 'Vui lòng nhập email và mật khẩu.';
+            alertEl.classList.remove('d-none');
+            return;
+        }
+
+        fetch('/api/authen/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        })
+        .then(async response => {
+            if (response.ok) {
+                window.location.href = '/';
+                return;
+            }
+            const text = await response.json();
+            alertEl.textContent = text.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.';
+            alertEl.classList.remove('d-none');
+        })
+        .catch(error => {
+            console.error('Login error:', error);
+            alertEl.textContent = 'Đã xảy ra lỗi khi đăng nhập.';
+            alertEl.classList.remove('d-none');
+        });
+    };
+</script>

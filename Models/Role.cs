@@ -19,12 +19,11 @@ public class Role : Entity
 
     public UserPermission Permissions { get; set; } = UserPermission.None;
 
-    [Required]
     [ForeignKey("Tenant")]
-    public Guid TenantId { get; set; }
+    public Guid? TenantId { get; set; }
     [JsonIgnore]
     public Tenant? Tenant { get; set; }
-
+ 
     [JsonIgnore]
-    public ICollection<User> Users { get; set; } = new List<User>();
+    public IEnumerable<User>? Users { get; set; }
 }

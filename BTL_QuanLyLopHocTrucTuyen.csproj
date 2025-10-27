@@ -17,7 +17,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Controllers/Instructor/" />
+    <Folder Include="Controllers/Student/" />
+    <Folder Include="Migrations/" />
     <Folder Include="Migrations\" />
+    <Folder Include="Views/Instructor/" />
+    <Folder Include="Views/Student/" />
   </ItemGroup>
 
 </Project>

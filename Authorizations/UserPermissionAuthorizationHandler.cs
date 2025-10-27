@@ -1,26 +1,44 @@
 using System;
+using System.Security.Claims;
+using BTL_QuanLyLopHocTrucTuyen.Helpers;
+using BTL_QuanLyLopHocTrucTuyen.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace BTL_QuanLyLopHocTrucTuyen.Authorizations;
 
-public class UserPermissionAuthorizationHandler : AuthorizationHandler<UserPermissionAuthorizeAttribute>
+public class UserPermissionAuthorizationHandler(IServiceScopeFactory scopeFactory) : AuthorizationHandler<UserPermissionAuthorizeAttribute>
 {
-    protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, UserPermissionAuthorizeAttribute requirement)
+    private readonly IUserRepository userRepository = scopeFactory.CreateScope().ServiceProvider.GetRequiredService<IUserRepository>();
+
+    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, UserPermissionAuthorizeAttribute requirement)
     {
-        var httpContext = (context.Resource as AuthorizationFilterContext)?.HttpContext;
-
-        var userPermissions = context.User.FindFirst(c => c.Type == "Permissions");
-
-        if (userPermissions != null && Enum.TryParse(userPermissions.Value, out Models.Enums.UserPermission permissions))
+        if (!context.User.Identity!.IsAuthenticated)
         {
-            if ((permissions & requirement.RequiredPermission) == requirement.RequiredPermission)
-            {
-                context.Succeed(requirement);
-                return Task.CompletedTask;
-            }
+            context.Fail(); // → 401 Unauthorized
+            return;
+        }
+        var userIdClaim = context.User?.FindFirst(ClaimTypes.NameIdentifier);
+
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out Guid userId))
+        {
+            context.Fail(); // → 403 Forbidden
+            return;
         }
 
-        return Task.CompletedTask;
+        var userPermissions = await userRepository.GetUserPermissionAsync(userId);
+
+        if (!userPermissions.HasValue)
+        {
+            context.Fail(); // → 403 Forbidden
+            return;
+        }
+
+        if (userPermissions.Value.HasPermission(requirement.RequiredPermission))
+        {
+            context.Succeed(requirement); // → 200 OK
+            return;
+        }
+        context.Fail(); // → 403 Forbidden
     }
 }
