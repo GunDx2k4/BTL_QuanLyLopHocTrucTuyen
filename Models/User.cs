@@ -28,7 +28,6 @@ public class User : Entity
     public Guid? RoleId { get; set; }
     [JsonIgnore]
     public Role? Role { get; set; }
-
     
     [JsonIgnore]
     public ICollection<Course> InstructedCourses { get; set; } = new List<Course>();

@@ -17,9 +17,8 @@ public class Tenant : Entity
 
     public DateTime? EndTime { get; set; }
 
-    [Required]
     [ForeignKey("Owner")]
-    public Guid OwnerId { get; set; }
+    public Guid? OwnerId { get; set; }
     [JsonIgnore]
     public User? Owner { get; set; }
 
