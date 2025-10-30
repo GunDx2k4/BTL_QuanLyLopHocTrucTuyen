@@ -1,11 +1,10 @@
 /* ===== Tổng thể ===== */
 .content-main {
     background: #ffffff;
-    margin: 15px;
+    
     padding: 25px 30px;
     border-radius: 10px;
     box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-    overflow-y: auto;
     min-height: calc(100vh - 100px);
     display: flex;
     flex-direction: column;

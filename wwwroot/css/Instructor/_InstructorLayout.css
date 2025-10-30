@@ -142,7 +142,6 @@ html, body {
 .main-content .main-body {
     flex: 1;
     display: block;
-    overflow-y: auto;   /* ✅ Giữ khả năng kéo trang */
     padding: 10px 20px;
 }
 

@@ -63,22 +63,22 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddSingleton<IAuthorizationHandler, UserPermissionAuthorizationHandler>();
 
-builder.Services.AddDbContext<ApplicationDbContext, MySqlDbContext>(options =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("MySqlConnection");
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-});
+// builder.Services.AddDbContext<ApplicationDbContext, MySqlDbContext>(options =>
+// {
+//     var connectionString = builder.Configuration.GetConnectionString("MySqlConnection");
+//     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+// });
 
-// builder.Services.AddDbContext<ApplicationDbContext, SqlServerDbContext>(options =>
-//     options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnection")));
+builder.Services.AddDbContext<ApplicationDbContext, SqlServerDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnection")));
 
-builder.Services.AddScoped<ICourseRepository, MySqlCourseRepository>();
-builder.Services.AddScoped<IUserRepository, MySqlUserRepository>();
-builder.Services.AddScoped<ITenantRepository, MySqlTenantRepository>();
+// builder.Services.AddScoped<ICourseRepository, MySqlCourseRepository>();
+// builder.Services.AddScoped<IUserRepository, MySqlUserRepository>();
+// builder.Services.AddScoped<ITenantRepository, MySqlTenantRepository>();
 
-// builder.Services.AddScoped<ICourseRepository, SqlServerCourseRepository>();
-// builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
-// builder.Services.AddScoped<ITenantRepository, SqlServerTenantRepository>();
+builder.Services.AddScoped<ICourseRepository, SqlServerCourseRepository>();
+builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
+builder.Services.AddScoped<ITenantRepository, SqlServerTenantRepository>();
 
 builder.Services.AddMemoryCache();
 
