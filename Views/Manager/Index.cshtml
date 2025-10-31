@@ -1,1 +1,253 @@
-﻿<h1>Manager Dashboard</h1>
+﻿@using Microsoft.EntityFrameworkCore.Metadata.Internal
+@{
+    Layout = "_LayoutManager";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h2 mb-0 text-dark">Dashboard @ViewBag.TenantName</h1>
+        </div>
+        <div>
+            <span class="badge bg-secondary text-white">@ViewBag.TenantPlan</span>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <small class="text-muted">Học viên</small>
+                    <h3 class="mb-0">@ViewBag.StudentCount</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <small class="text-muted">Giảng viên</small>
+                    <h3 class="mb-0">@ViewBag.InstructorCount</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <small class="text-muted">Khóa học đang hoạt động</small>
+                    <h3 class="mb-0">@ViewBag.CourseCount</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <small class="text-muted">Plan</small>
+                        <div class="fw-bold">@ViewBag.TenantPlan</div>
+                    </div>
+                    <small class="text-muted">@ViewBag.TenantEndTime</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule toolbar -->
+    <div class="mb-3 d-flex align-items-center justify-content-between">
+        <div>
+            <div class="text-primary">Schedule</div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <input type="week" id="weekPicker" class="form-control form-control-sm" style="width:160px;" />
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <div class="overflow-auto border rounded bg-white p-3" style="min-height:220px;">
+            <div id="scheduleContainer" class="d-flex gap-1">
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick actions -->
+    <h3 class="h5 mb-3">Thao Tác Nhanh</h3>
+    <div class="row g-3">
+        <div class="col-12 col-sm-6 col-md-3">
+            <div class="card h-100 text-center">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-3">📚</div>
+                    <h5 class="card-title">Thay Đổi Gói Dịch Vụ</h5>
+                    <p class="text-muted small">Thay đổi gói dịch vụ cho tenant</p>
+                    <div class="mt-auto">
+                        <a class="btn btn-primary w-100" data-action="plan" data-bs-toggle="modal"
+                            data-bs-target="#modalPlan">Thay Gói Đổi Dịch Vụ</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-3">
+            <div class="card h-100 text-center">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-3">👨‍🏫</div>
+                    <h5 class="card-title">Thêm Giảng Viên</h5>
+                    <p class="text-muted small">Đăng ký giảng viên mới</p>
+                    <div class="mt-auto">
+                        <a class="btn btn-primary w-100" data-action="instructor" data-bs-toggle="modal"
+                            data-bs-target="#modalInstructor">Thêm Giảng Viên</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-3">
+            <div class="card h-100 text-center">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-3">➕</div>
+                    <h5 class="card-title">Thêm Học Viên</h5>
+                    <p class="text-muted small">Đăng ký học viên mới</p>
+                    <div class="mt-auto">
+                        <a class="btn btn-primary w-100" data-action="student" data-bs-toggle="modal"
+                            data-bs-target="#modalStudent">Thêm Học Viên</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-3">
+            <div class="card h-100 text-center">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-3">📚</div>
+                    <h5 class="card-title">Thêm Khóa Học</h5>
+                    <p class="text-muted small">Tạo khóa học mới</p>
+                    <div class="mt-auto">
+                        <a class="btn btn-primary w-100" data-action="course" data-bs-toggle="modal"
+                            data-bs-target="#modalCourse">Thêm Khóa Học</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@await Html.PartialAsync("_ModalPlan")
+@await Html.PartialAsync("_ModalInstructor")
+@await Html.PartialAsync("_ModalStudent")
+@await Html.PartialAsync("_ModalCourse")
+
+@section Scripts {
+    <script>
+        window.tenantId = '@(ViewBag.TenantId ?? String.Empty)';
+        window.tenantEndTime = '@(ViewBag.TenantEndTime ?? null)';
+        $(document).ready(async () => {
+            const weekPicker = $('#weekPicker');
+            const scheduleContainer = $('#scheduleContainer');
+
+            // Hàm lấy số tuần ISO-8601
+            function getWeekNumber(date) {
+                const temp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+                const dayNum = temp.getUTCDay() || 7;
+                temp.setUTCDate(temp.getUTCDate() + 4 - dayNum);
+                const yearStart = new Date(Date.UTC(temp.getUTCFullYear(), 0, 1));
+                const weekNo = Math.ceil((((temp - yearStart) / 86400000) + 1) / 7);
+                return weekNo.toString().padStart(2, '0');
+            }
+
+            // Hàm lấy ngày bắt đầu (Thứ Hai) từ week input (YYYY-Wxx)
+            function getStartOfWeekFromInput(weekValue) {
+                const [year, week] = weekValue.split('-W').map(Number);
+                const simple = new Date(year, 0, 1 + (week - 1) * 7);
+                const dow = simple.getDay();
+                const ISOweekStart = simple;
+                if (dow <= 4)
+                    ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+                else
+                    ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+                return ISOweekStart;
+            }
+
+            // Hàm định dạng giờ
+            function formatTime(time) {
+                const d = new Date(time);
+                return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            }
+
+            // ===== Hàm render lịch =====
+            function renderSchedule(lessons, weekValue) {
+                const startOfWeek = getStartOfWeekFromInput(weekValue);
+                let html = '';
+
+                for (let i = 0; i < 7; i++) {
+                    const current = new Date(startOfWeek);
+                    current.setDate(startOfWeek.getDate() + i);
+                    const dayName = current.toLocaleDateString('vi-VN', { weekday: 'long' });
+
+                    const dayLessons = (lessons || []).filter(
+                        l => new Date(l.beginTime).toDateString() === current.toDateString()
+                    );
+
+                    html += `
+                            <div class="flex-fill border rounded bg-white p-2">
+                                <div class="mb-2 text-center">
+                                    <div class="fw-semibold text-capitalize">${dayName}</div>
+                                    <small class="text-muted">(${current.toLocaleDateString('vi-VN')})</small>
+                                </div>
+                        `;
+
+                    if (dayLessons.length > 0) {
+                        for (const lesson of dayLessons) {
+                            html += `
+                                    <div class="card mb-2">
+                                        <div class="card-body p-2">
+                                            <div class="fw-medium">${lesson.title}</div>
+                                            <small class="text-muted">${lesson.instructor.fullName || ''}</small><br/>
+                                            <small class="text-muted">
+                                                ${formatTime(lesson.beginTime)} - ${formatTime(lesson.endTime)}
+                                            </small>
+                                        </div>
+                                    </div>
+                                `;
+                        }
+                    } else {
+                        html += `<div class="text-muted small fst-italic text-center">Không có buổi học</div>`;
+                    }
+
+                    html += `</div>`;
+                }
+
+                scheduleContainer.html(html);
+            }
+
+            // ===== Hàm tải dữ liệu =====
+            async function loadData() {
+                const weekValue = weekPicker.val();
+                if (!weekValue) return;
+
+                scheduleContainer.html('<div class="text-center text-muted fst-italic">Đang tải lịch học...</div>');
+
+                try {
+                    const response = await fetch(`/api/tenants/${tenantId}/lessons?week=${weekValue}`, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
+                    if (!response.ok) throw new Error('Không thể tải lịch học');
+                    const data = await response.json();
+
+                    renderSchedule(data.lessons, weekValue);
+                } catch (err) {
+                    console.error(err);
+                    scheduleContainer.html('<div class="text-danger text-center fst-italic">Lỗi khi tải lịch học</div>');
+                }
+            }
+
+            // ===== Sự kiện thay đổi tuần =====
+            weekPicker.on('change', loadData);
+
+            // ===== Khởi tạo tuần hiện tại =====
+            const now = new Date();
+            const currentWeek = `${now.getFullYear()}-W${String(getWeekNumber(now)).padStart(2, '0')}`;
+            weekPicker.val(currentWeek);
+
+            // ===== Tải dữ liệu ban đầu =====
+            await loadData();
+        });
+
+    </script>
+}

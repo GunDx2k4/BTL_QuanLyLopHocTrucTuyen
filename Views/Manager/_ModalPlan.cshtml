@@ -1,0 +1,48 @@
+﻿@using BTL_QuanLyLopHocTrucTuyen.Models.Enums
+@{
+    var currentPlan = ViewBag.TenantPlan as PlanType?;
+    bool showMonth = currentPlan.HasValue && currentPlan.Value != PlanType.Free;
+}
+
+<div class="modal fade" id="modalPlan" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Thêm gói dịch vụ</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <form id="formAddPlan">
+                    <div id="alert" class="alert alert-danger d-none" role="alert"></div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Chọn gói dịch vụ</label>
+                        <select name="planType" id="planType" class="form-select" required>
+                            @foreach (PlanType plan in Enum.GetValues(typeof(PlanType)))
+                            {
+                                var isSelected = currentPlan.HasValue && currentPlan.Value == plan;
+                                <option value="@((byte)plan)" selected="@(isSelected ? "selected" : null)">
+                                    @plan
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="monthContainer" style="@(showMonth ? "" : "display:none;")">
+                        <label class="form-label fw-bold">Số tháng thuê</label>
+                        <input type="number" class="form-control" id="monthCount" name="monthCount" min="1"
+                            placeholder="Nhập số tháng">
+                        <div id="expireInfo" class="form-text text-success mt-2">Hết hạn vào: <span
+                                id="expireDate">@ViewBag.TenantEndTime</span></div>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit" form="formAddPlan" class="btn btn-primary">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>

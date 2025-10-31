@@ -31,12 +31,13 @@ public class Course : Entity
 
     [Required]
     [ForeignKey("Tenant")]
-    public Guid TenantId { get; set; }
+    public required Guid TenantId { get; set; }
     [JsonIgnore]
     public Tenant? Tenant { get; set; }
 
     [ForeignKey("Instructor")]
-    public Guid? InstructorId { get; set; }
+    [Required]
+    public required Guid InstructorId { get; set; }
     [JsonIgnore]
     public User? Instructor { get; set; }
 

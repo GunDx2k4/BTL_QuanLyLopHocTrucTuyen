@@ -1,0 +1,96 @@
+﻿@using BTL_QuanLyLopHocTrucTuyen.Models.Enums
+@{
+    ViewData["Title"] = "Đăng ký Tenant mới";
+
+    var planOptions = Enum.GetValues(typeof(PlanType))
+        .Cast<PlanType>()
+        .Select(pt => new
+        {
+            Value = (int)pt,
+            Text = pt.ToString()
+        })
+        .ToList();
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-header bg-primary text-white text-center py-3 rounded-top-4">
+                    <h4 class="mb-0">
+                        <i class="bi bi-building-add me-2"></i>Đăng ký gói dịch vụ mới
+                    </h4>
+                </div>
+
+                <div class="card-body p-4">
+                    <form id="tenantForm" onsubmit="registerTenant(event)">
+                        <div class="mb-3">
+                            <label for="TenantName" class="form-label fw-bold">Tên tổ chức</label>
+                            <input id="TenantName" name="TenantName" class="form-control" placeholder="Nhập tên tổ chức..." required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="Plan" class="form-label fw-bold">Gói dịch vụ</label>
+                            <select id="Plan" class="form-select">
+                                @foreach (var plan in planOptions)
+                                {
+                                    <option value="@plan.Value">@plan.Text</option>
+                                }
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                            <i class="bi bi-send-check me-1"></i>Đăng ký
+                        </button>
+                    </form>
+
+                    <div id="resultMessage" class="mt-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const registerTenant = async (event) => {
+        event.preventDefault();
+
+        const data = {
+            Name: $("#TenantName").val().trim(),
+            Plan: $("#Plan").val()
+        };
+
+        // Ẩn message cũ
+        $("#resultMessage").html("");
+
+        try {
+            const res = await fetch('/api/tenants/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await res.json();
+
+            if (res.ok) {
+                showModal("Đăng ký thành công!", "/");
+            } else {
+                $("#resultMessage").html(`
+                    <div class="alert alert-danger d-flex align-items-center" role="alert">
+                        <i class="bi bi-x-circle-fill me-2"></i>
+                        ${result.message ?? "Đăng ký thất bại!"}
+                    </div>
+                `);
+            }
+        } catch (error) {
+            $("#resultMessage").html(`
+                <div class="alert alert-danger d-flex align-items-center" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Lỗi: ${error.message ?? "Đã xảy ra lỗi!"}
+                </div>
+            `);
+        }
+    };
+</script>

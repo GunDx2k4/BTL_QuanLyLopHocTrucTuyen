@@ -20,60 +20,86 @@ public abstract class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // === CORE RELATIONSHIPS ===
-
-        // User -> Role (N:1)
-        modelBuilder.Entity<User>()
-            .HasOne(u => u.Role)
-            .WithMany(r => r.Users)
-            .HasForeignKey(u => u.RoleId)
-            .OnDelete(DeleteBehavior.SetNull);
-
-        // Tenant -> Owner (1:1)
+        // Cấu hình Tenant - Owner (1-1)
         modelBuilder.Entity<Tenant>()
             .HasOne(t => t.Owner)
-            .WithOne()
+            .WithOne() // Không có navigation ngược trong User
             .HasForeignKey<Tenant>(t => t.OwnerId)
-            .OnDelete(DeleteBehavior.Restrict); // ✅ tránh cascade vòng
+            .OnDelete(DeleteBehavior.Cascade);
 
-        // Tenant -> Users (1:N)
+        // Cấu hình Tenant - Users (1-nhiều)
         modelBuilder.Entity<User>()
             .HasOne(u => u.Tenant)
             .WithMany(t => t.Users)
             .HasForeignKey(u => u.TenantId)
-            .OnDelete(DeleteBehavior.Restrict); // ✅ đổi từ Cascade sang Restrict
+            .OnDelete(DeleteBehavior.Cascade);
 
-        // Tenant -> Roles (1:N)
         modelBuilder.Entity<Role>()
             .HasOne(r => r.Tenant)
             .WithMany(t => t.Roles)
             .HasForeignKey(r => r.TenantId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Tenant -> Courses (1:N)
         modelBuilder.Entity<Course>()
             .HasOne(c => c.Tenant)
             .WithMany(t => t.Courses)
             .HasForeignKey(c => c.TenantId)
-            .OnDelete(DeleteBehavior.Restrict); // ✅ đổi từ Cascade sang Restrict
-
-        // === COURSE RELATIONSHIPS ===
-
-        // Course -> Instructor (N:1)
-        modelBuilder.Entity<Course>()
-            .HasOne(c => c.Instructor)
-            .WithMany(u => u.InstructedCourses)
-            .HasForeignKey(c => c.InstructorId)
-            .OnDelete(DeleteBehavior.SetNull); // ✅ an toàn, không cascade
-
-        // Course -> Lessons (1:N)
-        modelBuilder.Entity<Lesson>()
-            .HasOne(l => l.Course)
-            .WithMany(c => c.Lessons)
-            .HasForeignKey(l => l.CourseId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // === LESSON RELATIONSHIPS ===
+        // // === CORE RELATIONSHIPS ===
+
+        // // User -> Role (N:1)
+        // modelBuilder.Entity<User>()
+        //     .HasOne(u => u.Role)
+        //     .WithMany(r => r.Users)
+        //     .HasForeignKey(u => u.RoleId)
+        //     .OnDelete(DeleteBehavior.SetNull); // Nếu xóa Role, user không mất mà RoleId = null
+
+        // // Tenant -> Owner (1:1)
+        // modelBuilder.Entity<Tenant>()
+        //     .HasOne(t => t.Owner)
+        //     .WithOne()
+        //     .HasForeignKey<Tenant>(t => t.OwnerId)
+        //     .OnDelete(DeleteBehavior.Cascade); // Không cho xóa Owner nếu còn Tenant
+
+        // // Tenant -> Users (1:N)
+        // modelBuilder.Entity<User>()
+        //     .HasOne(u => u.Tenant)
+        //     .WithMany(t => t.Users)
+        //     .HasForeignKey(u => u.TenantId)
+        //     .OnDelete(DeleteBehavior.Cascade); // Xóa Tenant sẽ xóa luôn tất cả Users thuộc Tenant
+
+        // // Tenant -> Roles (1:N)
+        // modelBuilder.Entity<Role>()
+        //     .HasOne(r => r.Tenant)
+        //     .WithMany(t => t.Roles)
+        //     .HasForeignKey(r => r.TenantId)
+        //     .OnDelete(DeleteBehavior.Cascade); // Xóa Tenant xóa luôn Roles
+
+        // // Tenant -> Courses (1:N)
+        // modelBuilder.Entity<Course>()
+        //     .HasOne(c => c.Tenant)
+        //     .WithMany(t => t.Courses)
+        //     .HasForeignKey(c => c.TenantId)
+        //     .OnDelete(DeleteBehavior.Cascade); // Xóa Tenant xóa luôn Courses
+
+        // // === COURSE RELATIONSHIPS ===
+
+        // // Course -> Instructor (N:1)
+        // modelBuilder.Entity<Course>()
+        //     .HasOne(c => c.Instructor)
+        //     .WithMany(u => u.InstructedCourses)
+        //     .HasForeignKey(c => c.InstructorId)
+        //     .OnDelete(DeleteBehavior.SetNull); // Instructor bị xóa => khóa học vẫn giữ
+
+        // // Course -> Lessons (1:N)
+        // modelBuilder.Entity<Lesson>()
+        //     .HasOne(l => l.Course)
+        //     .WithMany(c => c.Lessons)
+        //     .HasForeignKey(l => l.CourseId)
+        //     .OnDelete(DeleteBehavior.Cascade); // Xóa Course xóa Lessons
+
+        // // === LESSON RELATIONSHIPS ===
 
         // Lesson -> Assignments (1:N)
         modelBuilder.Entity<Assignment>()
@@ -81,22 +107,28 @@ public abstract class ApplicationDbContext : DbContext
             .WithMany(l => l.Assignments)
             .HasForeignKey(a => a.LessonId)
             .OnDelete(DeleteBehavior.Restrict); // ✅ tránh vòng lặp Lesson–Assignment–Submission
+        // // Lesson -> Assignments (1:N)
+        // modelBuilder.Entity<Assignment>()
+        //     .HasOne(a => a.Lesson)
+        //     .WithMany(l => l.Assignments)
+        //     .HasForeignKey(a => a.LessonId)
+        //     .OnDelete(DeleteBehavior.Cascade); // Xóa Lesson xóa Assignment
 
-        // Lesson -> Materials (1:N)
-        modelBuilder.Entity<Material>()
-            .HasOne(m => m.Lesson)
-            .WithMany(l => l.Materials)
-            .HasForeignKey(m => m.LessonId)
-            .OnDelete(DeleteBehavior.Cascade);
+        // // Lesson -> Materials (1:N)
+        // modelBuilder.Entity<Material>()
+        //     .HasOne(m => m.Lesson)
+        //     .WithMany(l => l.Materials)
+        //     .HasForeignKey(m => m.LessonId)
+        //     .OnDelete(DeleteBehavior.Cascade); // Xóa Lesson xóa Material
 
-        // Material -> Uploader (N:1)
-        modelBuilder.Entity<Material>()
-            .HasOne(m => m.Uploader)
-            .WithMany(u => u.UploadedMaterials)
-            .HasForeignKey(m => m.UploadedBy)
-            .OnDelete(DeleteBehavior.SetNull);
+        // // Material -> Uploader (N:1)
+        // modelBuilder.Entity<Material>()
+        //     .HasOne(m => m.Uploader)
+        //     .WithMany(u => u.UploadedMaterials)
+        //     .HasForeignKey(m => m.UploadedBy)
+        //     .OnDelete(DeleteBehavior.SetNull);
 
-        // === ENROLLMENT & SUBMISSION ===
+        // // === ENROLLMENT & SUBMISSION ===
 
         // Enrollment -> User (N:1)
         modelBuilder.Entity<Enrollment>()
@@ -104,6 +136,12 @@ public abstract class ApplicationDbContext : DbContext
             .WithMany(u => u.Enrollments)
             .HasForeignKey(e => e.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+        // // Enrollment -> User (N:1)
+        // modelBuilder.Entity<Enrollment>()
+        //     .HasOne(e => e.User)
+        //     .WithMany(u => u.Enrollments)
+        //     .HasForeignKey(e => e.UserId)
+        //     .OnDelete(DeleteBehavior.Cascade); // Xóa User xóa Enrollment
 
         // Enrollment -> Course (N:1)
         modelBuilder.Entity<Enrollment>()
@@ -111,6 +149,12 @@ public abstract class ApplicationDbContext : DbContext
             .WithMany(c => c.Enrollments)
             .HasForeignKey(e => e.CourseId)
             .OnDelete(DeleteBehavior.Cascade);
+        // // Enrollment -> Course (N:1)
+        // modelBuilder.Entity<Enrollment>()
+        //     .HasOne(e => e.Course)
+        //     .WithMany(c => c.Enrollments)
+        //     .HasForeignKey(e => e.CourseId)
+        //     .OnDelete(DeleteBehavior.Cascade); // Xóa Course xóa Enrollment
 
         // Assignment -> Submissions (1:N)
         modelBuilder.Entity<Submission>()
@@ -118,12 +162,19 @@ public abstract class ApplicationDbContext : DbContext
             .WithMany(a => a.Submissions)
             .HasForeignKey(s => s.AssignmentId)
             .OnDelete(DeleteBehavior.Cascade);
+        // // Assignment -> Submissions (1:N)
+        // modelBuilder.Entity<Submission>()
+        //     .HasOne(s => s.Assignment)
+        //     .WithMany(a => a.Submissions)
+        //     .HasForeignKey(s => s.AssignmentId)
+        //     .OnDelete(DeleteBehavior.Cascade); // Xóa Assignment xóa Submission
 
-        // Submission -> Student (N:1)
-        modelBuilder.Entity<Submission>()
-            .HasOne(s => s.Student)
-            .WithMany(u => u.Submissions)
-            .HasForeignKey(s => s.StudentId)
-            .OnDelete(DeleteBehavior.Cascade);
+        // // Submission -> Student (N:1)
+        // modelBuilder.Entity<Submission>()
+        //     .HasOne(s => s.Student)
+        //     .WithMany(u => u.Submissions)
+        //     .HasForeignKey(s => s.StudentId)
+        //     .OnDelete(DeleteBehavior.Cascade); // Xóa Student xóa Submission
     }
+
 }

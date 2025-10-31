@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using BTL_QuanLyLopHocTrucTuyen.Helpers;
 using BTL_QuanLyLopHocTrucTuyen.Models;
+using BTL_QuanLyLopHocTrucTuyen.Models.Enums;
 using BTL_QuanLyLopHocTrucTuyen.Models.ViewModels;
 using BTL_QuanLyLopHocTrucTuyen.Repositories;
 using Microsoft.AspNetCore.Authentication;
@@ -13,32 +14,29 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
 {
     [Route("api/authen")]
     [ApiController]
-    public class AuthenticationController(IUserRepository repository, IMemoryCache memoryCache) : ControllerBase
+    public class AuthenticationController(IUserRepository userRepository, IRoleRepository roleRepository, IMemoryCache memoryCache) : ControllerBase
     {
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginViewModel request)
         {
             if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+                return BadRequest(new { message = "Thông tin đăng nhập không hợp lệ." });
 
-            var user = await repository.ValidateUser(request.Email, request.Password);
-            if (user == null) return Unauthorized(new { message = "Invalid email or password" });
+            var user = await userRepository.ValidateUser(request.Email, request.Password);
+            if (user == null)
+                return Unauthorized(new { message = "Email hoặc mật khẩu không đúng." });
 
             if (memoryCache.TryGetValue(user.Id, out Guid cacheSession))
             {
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                return BadRequest("User is already logged in from another session.");
+                return Conflict(new { message = "Tài khoản này đã được đăng nhập ở thiết bị khác." });
             }
 
             if (User.Identity != null && User.Identity.IsAuthenticated)
-            {
-                return BadRequest($"User {User.Identity.Name} is already authenticated.");
-            }
+                return Conflict(new { message = $"Người dùng {User.Identity.Name} đã đăng nhập." });
 
             var sessionId = Guid.NewGuid();
-            memoryCache.Set(user.Id, sessionId);
+            memoryCache.Set(user.Id, sessionId, TimeSpan.FromMinutes(30));
 
             var claims = new List<Claim>
             {
@@ -51,8 +49,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
             var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
-
-            return Ok(new { message = $"Login {user.FullName} successful" });
+            return Ok(new { message = $"Đăng nhập thành công. Chào mừng {user.FullName}!" });
         }
 
         [HttpPost("logout")]
@@ -64,35 +61,31 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
             {
                 memoryCache.Remove(userId);
             }
+
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return Ok(new { message = "Logged out successfully" });
+            return Ok(new { message = "Đăng xuất thành công." });
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterViewModel request)
         {
             if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-            
-            var existingUser = await repository.FindByEmailAsync(request.Email);
+                return BadRequest(new { message = "Thông tin đăng ký không hợp lệ." });
 
+            var existingUser = await userRepository.FindByEmailAsync(request.Email);
             if (existingUser != null)
-            {
-                return BadRequest(new { message = "Email is already in use." });
-            }
+                return Conflict(new { message = "Email này đã được sử dụng." });
 
             var user = new User
             {
                 FullName = request.FullName,
                 Email = request.Email,
-                PasswordHash = SecurityHelper.HashPassword(request.Password)
+                PasswordHash = SecurityHelper.HashPassword(request.Password),
+                RoleId = roleRepository.DefaultRole.Id
             };
 
-            await repository.AddAsync(user);
-
-            return Ok(new { message = "User registered successfully" });
+            await userRepository.AddAsync(user);
+            return Ok(new { message = "Đăng ký tài khoản thành công." });
         }
     }
 }

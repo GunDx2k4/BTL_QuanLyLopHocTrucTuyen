@@ -12,7 +12,9 @@ namespace BTL_QuanLyLopHocTrucTuyen.Repositories.MySql;
 public class MySqlUserRepository(MySqlDbContext context) : IUserRepository
 {
     protected readonly DbSet<User> _dbSet = context.Users;
-    protected readonly IQueryable<User> _queryable = context.Users.Include(u => u.Role).Include(u => u.Tenant);
+    protected readonly IQueryable<User> _queryable = context.Users
+        .Include(u => u.Role)
+        .Include(u => u.Tenant);
 
     public async Task<User?> AddAsync(User entity)
     {

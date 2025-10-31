@@ -2,10 +2,12 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using BTL_QuanLyLopHocTrucTuyen.Models.ViewModels;
 using BTL_QuanLyLopHocTrucTuyen.Helpers;
+using Microsoft.AspNetCore.Authorization;
+using BTL_QuanLyLopHocTrucTuyen.Repositories;
 
 namespace BTL_QuanLyLopHocTrucTuyen.Controllers;
 
-public class HomeController : Controller
+public class HomeController(IUserRepository userRepository) : Controller
 {
 
     public async Task<IActionResult> Index()
@@ -35,6 +37,27 @@ public class HomeController : Controller
         {
             return await this.RedirectToHomePage();
         }
+        return View();
+    }
+
+    [Authorize]
+    public async Task<IActionResult> RegisterTenant()
+    {
+        var userId = User.GetUserId();
+        if (userId == Guid.Empty)
+        {
+            return await this.RedirectToHomePage();
+        }
+        var user = await userRepository.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return await this.RedirectToHomePage();
+        }
+        if (user.Tenant != null)
+        {
+            return await this.RedirectToHomePage();
+        }
+        
         return View();
     }
 }

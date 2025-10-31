@@ -1,5 +1,6 @@
 using System.Net;
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 using BTL_QuanLyLopHocTrucTuyen.Authorizations;
 using BTL_QuanLyLopHocTrucTuyen.Data;
 using BTL_QuanLyLopHocTrucTuyen.Helpers;
@@ -20,6 +21,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
+
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -49,7 +56,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
                     ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     return;
                 }
-                
+
                 await ctx.HttpContext.RedirectToHomePage();
             }
         };
@@ -74,13 +81,14 @@ builder.Services.AddSingleton<IAuthorizationHandler, UserPermissionAuthorization
 builder.Services.AddDbContext<ApplicationDbContext, SqlServerDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnection")));
 
-// builder.Services.AddScoped<ICourseRepository, MySqlCourseRepository>();
-// builder.Services.AddScoped<IUserRepository, MySqlUserRepository>();
-// builder.Services.AddScoped<ITenantRepository, MySqlTenantRepository>();
+builder.Services.AddScoped<ICourseRepository, MySqlCourseRepository>();
+builder.Services.AddScoped<IUserRepository, MySqlUserRepository>();
+builder.Services.AddScoped<ITenantRepository, MySqlTenantRepository>();
+builder.Services.AddScoped<IRoleRepository, MySqlRoleRepository>();
 
-builder.Services.AddScoped<ICourseRepository, SqlServerCourseRepository>();
-builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
-builder.Services.AddScoped<ITenantRepository, SqlServerTenantRepository>();
+// builder.Services.AddScoped<ICourseRepository, SqlServerCourseRepository>();
+// builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
+// builder.Services.AddScoped<ITenantRepository, SqlServerTenantRepository>();
 
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<SupabaseStorageService>();

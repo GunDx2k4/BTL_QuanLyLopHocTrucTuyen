@@ -25,7 +25,8 @@ public class User : Entity
     public Tenant? Tenant { get; set; }
 
     [ForeignKey("Role")]
-    public Guid? RoleId { get; set; }
+    [Required]
+    public required Guid RoleId { get; set; }
     [JsonIgnore]
     public Role? Role { get; set; }
     

@@ -39,7 +39,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Models
         public Guid? CourseId { get; set; }   // Cho phép null
 
         [JsonIgnore]
-        public virtual Course? Course { get; set; } // Quan hệ có thể null
+        public Course? Course { get; set; } // Quan hệ có thể null
 
 
         [Display(Name = "Trạng thái lịch học")]

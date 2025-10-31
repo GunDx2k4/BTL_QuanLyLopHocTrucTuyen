@@ -69,17 +69,19 @@
     </div>
 </div>
 
+
+@section Scripts {
 <script>
     const register = (event) => {
         event.preventDefault();
 
-        const alertEl = document.getElementById('registerAlert');
+        const alertEl = $('#registerAlert')[0];
         alertEl.classList.add('d-none');
 
-        const fullName = document.getElementById('fullName').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value.trim();
-        const confirmPassword = document.getElementById('confirmPassword').value.trim();
+        const fullName = $('#fullName').val().trim();
+        const email = $('#email').val().trim();
+        const password = $('#password').val().trim();
+        const confirmPassword = $('#confirmPassword').val().trim();
 
         if (!fullName || !email || !password || !confirmPassword) {
             alertEl.textContent = 'Vui lòng điền đầy đủ tất cả các trường.';
@@ -107,8 +109,7 @@
         .then(async response => {
             const data = await response.json().catch(() => ({}));
             if (response.ok) {
-                // success -> chuyển sang trang đăng nhập
-                window.location.href = '/home/login';
+                showModal("Đăng ký thành công!", "Login");
                 return;
             }
             alertEl.textContent = data.message || 'Đăng ký thất bại. Vui lòng thử lại.';
@@ -121,3 +122,4 @@
         });
     };
 </script>
+}

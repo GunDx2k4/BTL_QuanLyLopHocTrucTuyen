@@ -1,0 +1,52 @@
+﻿<div class="modal fade" id="modalCourse" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Khoá Học</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <form id="formAddCourse">
+                    <div id="alertCourse" class="alert alert-danger d-none" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label for="courseName" class="form-label fw-bold">Tên Khoá Học</label>
+                        <input type="text" class="form-control" id="courseName" name="Name"
+                               placeholder="Nhập tên khoá học" required maxlength="200" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="courseDescription" class="form-label fw-bold">Mô tả</label>
+                        <textarea class="form-control" id="courseDescription" name="Description"
+                                  rows="3" placeholder="Nhập mô tả khoá học (tùy chọn)"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="beginTime" class="form-label fw-bold">Ngày bắt đầu</label>
+                            <input type="date" class="form-control" id="beginTime" name="BeginTime" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="endTime" class="form-label fw-bold">Ngày kết thúc</label>
+                            <input type="date" class="form-control" id="endTime" name="EndTime" required />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="instructorId" class="form-label fw-bold">Giảng viên</label>
+                        <select class="form-select" id="instructorId" name="InstructorId" required>
+                            <!-- AJAX load danh sách giảng viên tại đây -->
+                        </select>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit" form="formAddCourse" class="btn btn-primary">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>

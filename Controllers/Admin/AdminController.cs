@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BTL_QuanLyLopHocTrucTuyen.Controllers.Admin
 {
-    [UserPermissionAuthorize(UserPermission.Administrator)]
+    [UserPermissionAuthorize(UserPermission.AdminUser)]
     public class AdminController : Controller
     {
         // GET: AdminController

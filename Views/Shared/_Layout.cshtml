@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/BTL_QuanLyLopHocTrucTuyen.styles.css" asp-append-version="true" />
 </head>
+
 <body>
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
@@ -96,6 +97,7 @@
         </div>
     </footer>
 
+    @await Html.PartialAsync("_ModalMessage")
 
     <script> 
         const logout = (event) => {
@@ -103,7 +105,7 @@
             fetch('api/authen/logout', { method: 'POST' })
                 .then(response => {
                     if (response.ok) {
-                        window.location.href = '/home/index';
+                        window.location.href = '/';
                     } else {
                         alert('Logout failed. Please try again.');
                     }
@@ -112,6 +114,20 @@
                     console.error('Error during logout:', error);
                     alert('An error occurred. Please try again.');
                 });
+        };
+
+         const showModal = (message, redirectUrl = null) => {
+            $('#modalBody').text(message);
+            const modalEl = $('#modalMessage');
+            const modal = new bootstrap.Modal(modalEl);
+
+            modalEl.on('hidden.bs.modal', () => {
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                }
+            });
+
+            modal.show();
         };
     </script>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

@@ -1,6 +1,4 @@
 using System;
-using System.Security.Claims;
-using BTL_QuanLyLopHocTrucTuyen.Models;
 using BTL_QuanLyLopHocTrucTuyen.Models.Enums;
 using BTL_QuanLyLopHocTrucTuyen.Repositories;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +9,8 @@ public static class PermissionHelper
 {
     public static bool HasPermission(this UserPermission source, UserPermission toCheck)
     {
+        if (source == toCheck)
+            return true;
         return (source & toCheck) != 0;
     }
 
@@ -26,37 +26,47 @@ public static class PermissionHelper
 
     public static async Task RedirectToHomePage(this HttpContext context)
     {
-        var userId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (userId == null)
+        var userId = context.User.GetUserId();
+        if (userId == Guid.Empty)
         {
             context.Response.Redirect("/");
             return;
         }
 
         var userRepository = context.RequestServices.GetRequiredService<IUserRepository>();
-        var permissions = await userRepository.GetUserPermissionAsync(Guid.Parse(userId));
+        var permissions = await userRepository.GetUserPermissionAsync(userId);
 
-        switch (permissions)
+        if (permissions == null)
         {
-            case null:
-                context.Response.Redirect("/");
-                break;
-            case UserPermission.Administrator:
-                context.Response.Redirect("/Admin");
-                break;
-            case UserPermission.Manager:
-                context.Response.Redirect("/Manager");
-                break;
-            case UserPermission.Instructor:
-                context.Response.Redirect("/Instructor");
-                break;
-            case UserPermission.Student:
-                context.Response.Redirect("/Student");
-                break;
-            default:
-                context.Response.Redirect("/");
-                break;
+            context.Response.Redirect("/");
+            return;
         }
+        if (permissions == UserPermission.None)
+        {
+            context.Response.Redirect("/");
+            return;
+        }
+        if (permissions.Value.HasFlag(UserPermission.AdminUser))
+        {
+            context.Response.Redirect("/Admin");
+            return;
+        }
+        if (permissions.Value.HasFlag(UserPermission.ManagerUser))
+        {
+            context.Response.Redirect("/Manager");
+            return;
+        }
+        if (permissions.Value.HasFlag(UserPermission.InstructorUser))
+        {
+            context.Response.Redirect("/Instructor");
+            return;
+        }
+        if (permissions.Value.HasFlag(UserPermission.StudentUser))
+        {
+            context.Response.Redirect("/Student");
+            return;
+        }
+        context.Response.Redirect("/");
     }
     
     public static async Task<IActionResult> RedirectToHomePage(this Controller controller)
@@ -75,18 +85,25 @@ public static class PermissionHelper
 
         var permissions = user.Role.Permissions;
 
-        switch (permissions)
+        if (permissions == UserPermission.None) return controller.View("RegisterTenant");
+
+        if (permissions.HasFlag(UserPermission.AdminUser))
         {
-            case UserPermission.Administrator:
-                return controller.RedirectToAction("Index", "Admin");
-            case UserPermission.Manager:
-                return controller.RedirectToAction("Index", "Manager");
-            case UserPermission.Instructor:
-                return controller.RedirectToAction("Index", "Instructor");
-            case UserPermission.Student:
-                return controller.RedirectToAction("Index", "Student");
-            default:
-                return controller.View();
+            return controller.RedirectToAction("Index", "Admin");
         }
+        if (permissions.HasFlag(UserPermission.ManagerUser))
+        {
+            return controller.RedirectToAction("Index", "Manager");
+        }
+        if (permissions.HasFlag(UserPermission.InstructorUser))
+        {
+            return controller.RedirectToAction("Index", "Instructor");
+        }
+        if (permissions.HasFlag(UserPermission.StudentUser))
+        {
+            return controller.RedirectToAction("Index", "Student");
+        }
+        
+        return controller.View();
     }
 }

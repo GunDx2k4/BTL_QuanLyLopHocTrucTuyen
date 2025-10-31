@@ -7,5 +7,6 @@ namespace BTL_QuanLyLopHocTrucTuyen.Repositories;
 
 public interface ICourseRepository : IEntityRepository<Course>
 {
+    public Task<bool> IsSameTenantAsync(Guid userId, Guid courseId);
 
 }

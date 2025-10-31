@@ -64,15 +64,16 @@
     </div>
 </div>
 
+@section Scripts {
 <script>
     const login = (event) => {
         event.preventDefault();
 
-        const alertEl = document.getElementById('loginAlert');
+        const alertEl = $('#loginAlert')[0];
         alertEl.classList.add('d-none');
 
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value.trim();
+        const email = $('#email').val().trim();
+        const password = $('#password').val().trim();
 
         if (!email || !password) {
             alertEl.textContent = 'Vui lòng nhập email và mật khẩu.';
@@ -87,7 +88,7 @@
         })
         .then(async response => {
             if (response.ok) {
-                window.location.href = '/';
+                window.location.href = "/";
                 return;
             }
             const text = await response.json();
@@ -101,3 +102,4 @@
         });
     };
 </script>
+}

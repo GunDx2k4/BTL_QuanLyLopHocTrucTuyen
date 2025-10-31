@@ -69,19 +69,25 @@ public enum UserPermission : ulong
     ManageAllRoles = 1UL << 47, // Manage all roles
     FullAccess = ulong.MaxValue,
 
+    //User
+    AdminUser = 1UL << 48,
+    ManagerUser = 1UL << 49,
+    InstructorUser = 1UL << 50,
+    StudentUser = 1UL << 51,
+
 
     //Role
     BasicUser = ViewUser | EditUser,
 
-    Administrator = ViewDashboard | ManageAllTenants | ManageAllUsers | ManageAllRoles | BasicUser,
+    Administrator = AdminUser | ViewDashboard | ManageAllTenants | ManageAllUsers | ManageAllRoles | BasicUser,
 
-    Manager = CreateUser | CreateCourse | EditCourse | DeleteCourse | ViewCourse | ViewCourses |
+    Manager = ManagerUser | ViewTenant | CreateUser | CreateCourse | EditCourse | DeleteCourse | ViewCourse | ViewCourses |
               EnrollStudents | ManagerInstructors | ViewUsers | EditUsers | BasicUser,
-    Instructor = ViewCourse | CreateLesson | EditLesson | DeleteLesson | ViewLesson | ViewLessons |
+    Instructor = InstructorUser | ViewCourse | CreateLesson | EditLesson | DeleteLesson | ViewLesson | ViewLessons |
                  CreateAssignment | EditAssignment | DeleteAssignment | ViewAssignment | ViewAssignments |
                  CreateMaterial | EditMaterial | DeleteMaterial | ViewMaterial | ViewMaterials |
                  ViewSubmission | ViewSubmissions | GradeSubmissions | BasicUser,
-    Student = EnrollCourses | ViewCourse | CreateSubmission | EditSubmission | DeleteSubmission |
+    Student = StudentUser | EnrollCourses | ViewCourse | CreateSubmission | EditSubmission | DeleteSubmission |
               ViewSubmission | BasicUser
 
 }

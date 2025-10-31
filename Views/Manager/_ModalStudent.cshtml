@@ -1,0 +1,39 @@
+﻿<div class="modal fade" id="modalStudent" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Học Viên</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <form id="formAddStudent">
+                    <div id="alert" class="alert alert-danger d-none" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label for="studentName" class="form-label fw-bold">Họ và tên</label>
+                        <input type="text" class="form-control" id="studentName" name="Name" 
+                               placeholder="Nhập họ và tên" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="studentEmail" class="form-label fw-bold">Email</label>
+                        <input type="email" class="form-control" id="studentEmail" name="Email" 
+                               placeholder="Nhập email" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="studentPassword" class="form-label fw-bold">Mật khẩu</label>
+                        <input type="password" class="form-control" id="studentPassword" name="Password" 
+                               placeholder="Nhập mật khẩu" required minlength="6" />
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit" form="formAddStudent" class="btn btn-primary">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -20,6 +20,7 @@
   <ItemGroup>
     <Folder Include="Controllers/Instructor/" />
     <Folder Include="Controllers/Student/" />
+    <Folder Include="Migrations/" />
     <Folder Include="Migrations\" />
     <Folder Include="Views/Instructor/HomeInstructor/" />
     <Folder Include="Views/Student/" />

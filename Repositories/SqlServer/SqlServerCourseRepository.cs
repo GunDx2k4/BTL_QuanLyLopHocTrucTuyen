@@ -8,29 +8,42 @@ namespace BTL_QuanLyLopHocTrucTuyen.Repositories.SqlServer;
 public class SqlServerCourseRepository(SqlServerDbContext context) : ICourseRepository
 {
     protected readonly DbSet<Course> _dbSet = context.Courses;
+    protected readonly IQueryable<Course> _queryable = context.Courses
+        .Include(c => c.Instructor)
+        .Include(c => c.Tenant)
+        .Include(c => c.Lessons)
+        .Include(c => c.Enrollments);
+
     public async Task<Course?> AddAsync(Course entity)
     {
-        _dbSet.Add(entity);
+        var result = await _dbSet.AddAsync(entity);
         await context.SaveChangesAsync();
-        return entity;
+
+        // Load navigation properties
+        await context.Entry(entity).Reference(c => c.Instructor).LoadAsync();
+        await context.Entry(entity).Reference(c => c.Tenant).LoadAsync();
+        await context.Entry(entity).Collection(c => c.Lessons).LoadAsync();
+        await context.Entry(entity).Collection(c => c.Enrollments).LoadAsync();
+
+        return result.Entity;
     }
 
     public async Task<IEnumerable<Course>> FindAsync()
     {
-        var products = await _dbSet.ToListAsync();
-        return products;
+        var courses = await _queryable.ToListAsync();
+        return courses;
     }
 
     public async Task<Course?> FindByIdAsync(Guid id)
     {
-        return await _dbSet.FindAsync(id);
+        return await _queryable.FirstOrDefaultAsync(c => c.Id == id);
     }
 
     public async Task<int> UpdateAsync(Course entity)
     {
-
         _dbSet.Update(entity);
-        return await context.SaveChangesAsync();
+        var updated = await context.SaveChangesAsync();
+        return updated;
     }
 
     public async Task<int> DeleteAllAsync()
@@ -42,7 +55,7 @@ public class SqlServerCourseRepository(SqlServerDbContext context) : ICourseRepo
 
     public async Task<int> DeleteByIdAsync(Guid id)
     {
-        var entity = await _dbSet.FindAsync(id);
+        var entity = await _dbSet.FirstOrDefaultAsync(c => c.Id == id);
         if (entity is null)
         {
             return 0;
@@ -50,4 +63,18 @@ public class SqlServerCourseRepository(SqlServerDbContext context) : ICourseRepo
         _dbSet.Remove(entity);
         return await context.SaveChangesAsync();
     }
+
+    public async Task<bool> IsSameTenantAsync(Guid userId, Guid courseId)
+    {
+        var course = await _queryable.FirstOrDefaultAsync(c => c.Id == courseId);
+        if (course == null)
+            return false;
+
+        var instructor = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (instructor == null)
+            return false;
+
+        return course.TenantId == instructor.TenantId;
+    }
+
 }
