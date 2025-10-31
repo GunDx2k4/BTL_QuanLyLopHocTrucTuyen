@@ -6,6 +6,7 @@ using BTL_QuanLyLopHocTrucTuyen.Helpers;
 using BTL_QuanLyLopHocTrucTuyen.Middlewares;
 using BTL_QuanLyLopHocTrucTuyen.Models.Enums;
 using BTL_QuanLyLopHocTrucTuyen.Repositories;
+using BTL_QuanLyLopHocTrucTuyen.Services;
 using BTL_QuanLyLopHocTrucTuyen.Repositories.MySql;
 using BTL_QuanLyLopHocTrucTuyen.Repositories.SqlServer;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -13,6 +14,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -81,6 +83,7 @@ builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
 builder.Services.AddScoped<ITenantRepository, SqlServerTenantRepository>();
 
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<SupabaseStorageService>();
 
 var app = builder.Build();
 

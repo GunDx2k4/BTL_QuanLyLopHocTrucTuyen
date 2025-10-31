@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using BTL_QuanLyLopHocTrucTuyen.Data;
 using BTL_QuanLyLopHocTrucTuyen.Models;
+using BTL_QuanLyLopHocTrucTuyen.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace BTL_QuanLyLopHocTrucTuyen.Controllers
@@ -9,10 +10,12 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
     public class MaterialInstructorController : Controller
     {
         private readonly SqlServerDbContext _context;
+        private readonly SupabaseStorageService _supabaseStorage;
 
-        public MaterialInstructorController(SqlServerDbContext context)
+        public MaterialInstructorController(SqlServerDbContext context, SupabaseStorageService supabaseStorage)
         {
             _context = context;
+            _supabaseStorage = supabaseStorage;
         }
 
         /* =====================================================
@@ -30,7 +33,6 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
             return View("~/Views/Instructor/MaterialInstructor/Material.cshtml", materials);
         }
 
-
         /* =====================================================
            ➕ THÊM TÀI LIỆU
         ===================================================== */
@@ -46,36 +48,41 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddMaterial([FromForm] Material material)
         {
+            Console.WriteLine("===== 🧩 BẮT ĐẦU XỬ LÝ THÊM TÀI LIỆU =====");
+            Console.WriteLine($"📘 Tiêu đề: {material.Title}");
+
             if (!ModelState.IsValid)
             {
-                return Json(new { success = false, errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage) });
+                return Json(new { success = false, errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList() });
             }
 
             material.Id = Guid.NewGuid();
             material.UploadedAt = DateTime.Now;
 
-            // 🔹 Nếu người dùng upload file từ máy
-            if (material.UploadFile != null && material.UploadFile.Length > 0)
+            try
             {
-                string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/materials");
-                Directory.CreateDirectory(uploadsFolder);
-
-                string uniqueFileName = Guid.NewGuid() + Path.GetExtension(material.UploadFile.FileName);
-                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                // ✅ Upload file lên Supabase (nếu có)
+                if (material.UploadFile != null && material.UploadFile.Length > 0)
                 {
-                    await material.UploadFile.CopyToAsync(stream);
+                    var publicUrl = await _supabaseStorage.UploadFileAsync(material.UploadFile, "materials");
+                    material.UploadedFileUrl = publicUrl;
+                    material.UploadedFileName = material.UploadFile.FileName;
                 }
 
-                material.UploadedFileUrl = "/uploads/materials/" + uniqueFileName;
-                material.UploadedFileName = material.UploadFile.FileName;
+                _context.Materials.Add(material);
+                await _context.SaveChangesAsync();
+
+                Console.WriteLine($"✅ Đã thêm tài liệu '{material.Title}' với file: {material.UploadedFileUrl}");
+                return Json(new { success = true });
             }
-
-            _context.Add(material);
-            await _context.SaveChangesAsync();
-
-            return Json(new { success = true });
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Lỗi khi thêm tài liệu: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
 
@@ -96,70 +103,41 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditMaterial([FromForm] Material material)
         {
-            if (!ModelState.IsValid)
-            {
-                return Json(new
-                {
-                    success = false,
-                    errors = ModelState.Values
-                        .SelectMany(v => v.Errors)
-                        .Select(e => e.ErrorMessage)
-                        .ToList()
-                });
-            }
-
             var existing = await _context.Materials.FindAsync(material.Id);
             if (existing == null)
-                return Json(new { success = false, message = "Không tìm thấy tài liệu!" });
+                return NotFound();
 
             try
             {
-                // ===== Cập nhật các trường cơ bản =====
                 existing.Title = material.Title;
                 existing.Description = material.Description;
                 existing.LessonId = material.LessonId;
                 existing.IsPublic = material.IsPublic;
-                existing.UploadedAt = material.UploadedAt;
                 existing.ExternalFileUrl = material.ExternalFileUrl;
 
-                // ===== Nếu upload file mới =====
+                // ✅ Nếu có file mới thì xóa file cũ rồi upload lại
                 if (material.UploadFile != null && material.UploadFile.Length > 0)
                 {
-                    string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/materials");
-                    Directory.CreateDirectory(uploadsFolder);
-
-                    // Xóa file cũ (nếu có)
                     if (!string.IsNullOrEmpty(existing.UploadedFileUrl))
-                    {
-                        string oldPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", existing.UploadedFileUrl.TrimStart('/'));
-                        if (System.IO.File.Exists(oldPath))
-                            System.IO.File.Delete(oldPath);
-                    }
+                        await _supabaseStorage.DeleteFileAsync(existing.UploadedFileUrl);
 
-                    // Lưu file mới
-                    string uniqueFileName = Guid.NewGuid() + Path.GetExtension(material.UploadFile.FileName);
-                    string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await material.UploadFile.CopyToAsync(stream);
-                    }
-
-                    existing.UploadedFileUrl = "/uploads/materials/" + uniqueFileName;
+                    var newUrl = await _supabaseStorage.UploadFileAsync(material.UploadFile, "materials");
+                    existing.UploadedFileUrl = newUrl;
                     existing.UploadedFileName = material.UploadFile.FileName;
                 }
 
-                _context.Materials.Update(existing);
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true });
+                Console.WriteLine($"✏️ Đã cập nhật tài liệu '{existing.Title}'");
+                TempData["SuccessMessage"] = "✅ Cập nhật tài liệu thành công!";
+                return RedirectToAction(nameof(Material));
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Lỗi: " + ex.Message });
+                Console.WriteLine($"❌ Lỗi EditMaterial: {ex.Message}");
+                return View("~/Views/Instructor/MaterialInstructor/EditMaterial.cshtml", material);
             }
         }
-
-
 
         /* =====================================================
            🗑️ XÓA TÀI LIỆU
@@ -173,26 +151,29 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 
             try
             {
+                if (!string.IsNullOrEmpty(material.UploadedFileUrl))
+                    await _supabaseStorage.DeleteFileAsync(material.UploadedFileUrl);
+
                 _context.Materials.Remove(material);
                 await _context.SaveChangesAsync();
+
+                Console.WriteLine($"🗑️ Đã xóa tài liệu '{material.Title}'");
                 return Json(new { success = true });
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ Lỗi DeleteMaterial: {ex.Message}");
                 return Json(new { success = false, message = ex.Message });
             }
         }
 
-
         /* =====================================================
-        🌍 CÔNG KHAI / ẨN TÀI LIỆU
+           🌍 CÔNG KHAI / ẨN TÀI LIỆU
         ===================================================== */
         [HttpPost]
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> TogglePublicMaterial(Guid id)
         {
-            Console.WriteLine($"🔹 TogglePublic ID = {id}");
-
             var material = await _context.Materials.FindAsync(id);
             if (material == null)
                 return Json(new { success = false, message = "Không tìm thấy tài liệu." });
@@ -202,12 +183,11 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                 material.IsPublic = !material.IsPublic;
                 await _context.SaveChangesAsync();
 
-                Console.WriteLine($"✅ Đã cập nhật IsPublic = {material.IsPublic}");
+                Console.WriteLine($"🌍 Đã cập nhật công khai: {material.Title} = {material.IsPublic}");
                 return Json(new { success = true, isPublic = material.IsPublic });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Lỗi TogglePublic: {ex.Message}");
                 return Json(new { success = false, message = ex.Message });
             }
         }

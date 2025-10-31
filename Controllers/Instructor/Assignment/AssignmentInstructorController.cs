@@ -1,5 +1,6 @@
 using BTL_QuanLyLopHocTrucTuyen.Data;
 using BTL_QuanLyLopHocTrucTuyen.Models;
+using BTL_QuanLyLopHocTrucTuyen.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,10 +10,12 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
     public class AssignmentInstructorController : Controller
     {
         private readonly SqlServerDbContext _context;
+        private readonly SupabaseStorageService _supabaseStorage;
 
-        public AssignmentInstructorController(SqlServerDbContext context)
+        public AssignmentInstructorController(SqlServerDbContext context, SupabaseStorageService supabaseStorage)
         {
             _context = context;
+            _supabaseStorage = supabaseStorage;
         }
 
         /* =====================================================
@@ -30,20 +33,13 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         }
 
         /* =====================================================
-           ➕ THÊM BÀI TẬP (CHO PHÉP CẢ LINK NGOÀI + FILE)
+           ➕ THÊM BÀI TẬP (Supabase)
         ===================================================== */
         [HttpGet]
         public async Task<IActionResult> AddAssignment(Guid? lessonId)
         {
-            ViewBag.Lessons = await _context.Lessons
-                .OrderBy(l => l.Title)
-                .ToListAsync();
-
-            var assignment = new Assignment
-            {
-                LessonId = lessonId ?? Guid.Empty
-            };
-
+            ViewBag.Lessons = await _context.Lessons.OrderBy(l => l.Title).ToListAsync();
+            var assignment = new Assignment { LessonId = lessonId ?? Guid.Empty };
             return View("~/Views/Instructor/AssignmentInstructor/AddAssignment.cshtml", assignment);
         }
 
@@ -53,8 +49,6 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         {
             Console.WriteLine("===== 🧩 BẮT ĐẦU XỬ LÝ THÊM BÀI TẬP =====");
             Console.WriteLine($"📘 Tiêu đề: {assignment.Title}");
-            Console.WriteLine($"🌐 Link ngoài: {assignment.ExternalFileUrl ?? "(trống)"}");
-            Console.WriteLine($"📂 File upload: {(assignment.UploadFile != null ? assignment.UploadFile.FileName : "Không có")}");
 
             if (!ModelState.IsValid)
             {
@@ -65,39 +59,30 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
             assignment.Id = Guid.NewGuid();
             assignment.CreatedAt = DateTime.Now;
 
-            // 🟢 Xử lý file upload từ máy (nếu có)
-            if (assignment.UploadFile != null && assignment.UploadFile.Length > 0)
+            try
             {
-                try
+                // ✅ Nếu có file upload → lưu lên Supabase
+                if (assignment.UploadFile != null && assignment.UploadFile.Length > 0)
                 {
-                    string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/assignments");
-                    Directory.CreateDirectory(uploadsFolder);
-
-                    string fileName = Guid.NewGuid() + Path.GetExtension(assignment.UploadFile.FileName);
-                    string filePath = Path.Combine(uploadsFolder, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await assignment.UploadFile.CopyToAsync(stream);
-                    }
-
-                    assignment.UploadedFileUrl = "/uploads/assignments/" + fileName;
+                    var url = await _supabaseStorage.UploadFileAsync(assignment.UploadFile, "assignments");
+                    assignment.UploadedFileUrl = url;
                     assignment.UploadedFileName = assignment.UploadFile.FileName;
+                }
 
-                    Console.WriteLine($"✅ Đã lưu file nội bộ: {assignment.UploadedFileUrl}");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"❌ Lỗi khi lưu file: {ex.Message}");
-                }
+                _context.Assignments.Add(assignment);
+                await _context.SaveChangesAsync();
+
+                Console.WriteLine($"✅ Đã thêm bài tập '{assignment.Title}' với file: {assignment.UploadedFileUrl}");
+                TempData["SuccessMessage"] = "✅ Thêm bài tập thành công!";
+                return RedirectToAction(nameof(Assignment));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Lỗi khi thêm bài tập: {ex.Message}");
+                ViewBag.Lessons = await _context.Lessons.OrderBy(l => l.Title).ToListAsync(); // ✅ Thêm dòng này
+                return View("~/Views/Instructor/AssignmentInstructor/AddAssignment.cshtml", assignment);
             }
 
-            _context.Assignments.Add(assignment);
-            await _context.SaveChangesAsync();
-
-            Console.WriteLine("🎉 Đã lưu bài tập thành công!");
-            TempData["SuccessMessage"] = "✅ Thêm bài tập thành công!";
-            return RedirectToAction(nameof(Assignment));
         }
 
         /* =====================================================
@@ -107,11 +92,9 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         public async Task<IActionResult> EditAssignment(Guid id)
         {
             var assignment = await _context.Assignments.FindAsync(id);
-            if (assignment == null)
-                return NotFound();
+            if (assignment == null) return NotFound();
 
             ViewBag.Lessons = await _context.Lessons.OrderBy(l => l.Title).ToListAsync();
-
             return View("~/Views/Instructor/AssignmentInstructor/EditAssignment.cshtml", assignment);
         }
 
@@ -119,47 +102,43 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditAssignment([FromForm] Assignment assignment)
         {
-            if (!ModelState.IsValid)
-            {
-                ViewBag.Lessons = await _context.Lessons.OrderBy(l => l.Title).ToListAsync();
-                return View("~/Views/Instructor/AssignmentInstructor/EditAssignment.cshtml", assignment);
-            }
-
             var existing = await _context.Assignments.FindAsync(assignment.Id);
             if (existing == null)
                 return NotFound();
 
-            // ✅ Cập nhật các trường cơ bản
-            existing.Title = assignment.Title;
-            existing.Description = assignment.Description;
-            existing.MaxScore = assignment.MaxScore;
-            existing.Type = assignment.Type;
-            existing.AvailableFrom = assignment.AvailableFrom;
-            existing.AvailableUntil = assignment.AvailableUntil;
-            existing.LessonId = assignment.LessonId;
-            existing.ExternalFileUrl = assignment.ExternalFileUrl;
-
-            // ✅ Nếu người dùng upload file mới → ghi đè file cũ
-            if (assignment.UploadFile != null && assignment.UploadFile.Length > 0)
+            try
             {
-                string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/assignments");
-                Directory.CreateDirectory(uploadsFolder);
+                existing.Title = assignment.Title;
+                existing.Description = assignment.Description;
+                existing.MaxScore = assignment.MaxScore;
+                existing.Type = assignment.Type;
+                existing.AvailableFrom = assignment.AvailableFrom;
+                existing.AvailableUntil = assignment.AvailableUntil;
+                existing.LessonId = assignment.LessonId;
+                existing.ExternalFileUrl = assignment.ExternalFileUrl;
 
-                string fileName = Guid.NewGuid() + Path.GetExtension(assignment.UploadFile.FileName);
-                string filePath = Path.Combine(uploadsFolder, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                // ✅ Nếu có file mới → xóa file cũ rồi upload lại
+                if (assignment.UploadFile != null && assignment.UploadFile.Length > 0)
                 {
-                    await assignment.UploadFile.CopyToAsync(stream);
+                    if (!string.IsNullOrEmpty(existing.UploadedFileUrl))
+                        await _supabaseStorage.DeleteFileAsync(existing.UploadedFileUrl);
+
+                    var newUrl = await _supabaseStorage.UploadFileAsync(assignment.UploadFile, "assignments");
+                    existing.UploadedFileUrl = newUrl;
+                    existing.UploadedFileName = assignment.UploadFile.FileName;
                 }
 
-                existing.UploadedFileUrl = "/uploads/assignments/" + fileName;
-                existing.UploadedFileName = assignment.UploadFile.FileName;
-            }
+                await _context.SaveChangesAsync();
 
-            await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "✅ Cập nhật bài tập thành công!";
-            return RedirectToAction(nameof(Assignment));
+                Console.WriteLine($"✏️ Đã cập nhật bài tập '{existing.Title}'");
+                TempData["SuccessMessage"] = "✅ Cập nhật bài tập thành công!";
+                return RedirectToAction(nameof(Assignment));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Lỗi EditAssignment: {ex.Message}");
+                return View("~/Views/Instructor/AssignmentInstructor/EditAssignment.cshtml", assignment);
+            }
         }
 
         /* =====================================================
@@ -174,12 +153,18 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 
             try
             {
+                if (!string.IsNullOrEmpty(assignment.UploadedFileUrl))
+                    await _supabaseStorage.DeleteFileAsync(assignment.UploadedFileUrl);
+
                 _context.Assignments.Remove(assignment);
                 await _context.SaveChangesAsync();
+
+                Console.WriteLine($"🗑️ Đã xóa bài tập '{assignment.Title}'");
                 return Json(new { success = true });
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ Lỗi DeleteAssignment: {ex.Message}");
                 return Json(new { success = false, message = ex.Message });
             }
         }
@@ -188,16 +173,25 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
            🌍 CÔNG KHAI / ẨN BÀI TẬP
         ===================================================== */
         [HttpPost]
+        [IgnoreAntiforgeryToken]
         public async Task<IActionResult> TogglePublicAssignment(Guid id)
         {
             var assignment = await _context.Assignments.FindAsync(id);
             if (assignment == null)
                 return Json(new { success = false, message = "Không tìm thấy bài tập." });
 
-            assignment.IsPublic = !assignment.IsPublic;
-            await _context.SaveChangesAsync();
+            try
+            {
+                assignment.IsPublic = !assignment.IsPublic;
+                await _context.SaveChangesAsync();
 
-            return Json(new { success = true, isPublic = assignment.IsPublic });
+                Console.WriteLine($"🌍 Đã cập nhật công khai: {assignment.Title} = {assignment.IsPublic}");
+                return Json(new { success = true, isPublic = assignment.IsPublic });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
     }
 }

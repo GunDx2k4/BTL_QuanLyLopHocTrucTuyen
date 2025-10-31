@@ -17,18 +17,25 @@ $(document).ready(function () {
         const keyword = removeVietnamese($(this).val().toLowerCase().trim());
         let hasResult = false;
 
-        $dropdown.children("li").each(function () {
-            const text = removeVietnamese($(this).text().toLowerCase());
-            if (text.includes(keyword)) {
-                $(this).show();
-                hasResult = true;
-            } else {
-                $(this).hide();
-            }
-        });
+        // Nếu chưa nhập gì → hiện toàn bộ
+        if (keyword === "") {
+            $dropdown.children("li").show();
+            hasResult = true;
+        } else {
+            $dropdown.children("li").each(function () {
+                const text = removeVietnamese($(this).text().toLowerCase());
+                if (text.includes(keyword)) {
+                    $(this).show();
+                    hasResult = true;
+                } else {
+                    $(this).hide();
+                }
+            });
+        }
 
         $dropdown.toggle(hasResult);
     });
+
 
     // Khi chọn 1 bài học
     $dropdown.on("click", "li", function () {
