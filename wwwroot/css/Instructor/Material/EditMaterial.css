@@ -1,9 +1,9 @@
-/* ===== Tổng thể form ===== */
+/* ===== Khung form tổng ===== */
 .content-main {
     background: #ffffff;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-    margin: 20px auto;
+    margin: 0px auto;
     padding: 30px 40px;
     max-width: 900px;
     width: 95%;
@@ -13,61 +13,93 @@
     transition: all 0.3s ease;
 }
 
-/* Tiêu đề form */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Tiêu đề ===== */
 .content-main h3 {
     color: #0d6efd;
-    font-weight: 600;
-    margin-bottom: 25px;
+    font-weight: 700;
     text-align: center;
+    margin-bottom: 25px;
 }
 
-/* ===== Label & Input ===== */
+/* ===== Nhãn và input ===== */
 .form-label {
-    font-weight: 500;
-    color: #333;
-    margin-bottom: 6px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
 }
 
-.form-control, 
-textarea.form-control {
-    border-radius: 8px;
-    padding: 10px 12px;
+.form-control, textarea.form-control, .form-select {
+    border-radius: 10px;
+    padding: 11px 14px;
     font-size: 15px;
     border: 1px solid #ced4da;
     transition: 0.25s ease;
+    background-color: #fafafa;
 }
 
-/* Khi focus vào input */
 .form-control:focus, 
-textarea.form-control:focus {
+textarea.form-control:focus, 
+.form-select:focus {
     border-color: #0d6efd;
     box-shadow: 0 0 0 3px rgba(13,110,253,0.2);
+    background-color: #fff;
     outline: none;
 }
 
-/* Textarea */
-textarea.form-control {
-    resize: vertical;
-    min-height: 100px;
+/* Khung chính */
+/* === Nút X (xóa lựa chọn) === */
+.input-wrapper {
+    position: relative;
+}
+
+.btn-clear {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    font-size: 22px;
+    line-height: 1;
+    color: #aaa;
+    cursor: pointer;
+    display: none;
+    padding: 0;
+}
+
+.btn-clear:hover {
+    color: #dc3545;
+}
+
+/* Dropdown danh sách */
+#lessonDropdown li {
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+#lessonDropdown li:hover {
+    background-color: #0d6efd;
+    color: #fff;
+}
+
+#lessonSearch:focus {
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 3px rgba(13,110,253,0.25);
 }
 
 
-
-.select2-container--open .select2-dropdown {
-    top: 100% !important;
-    bottom: auto !important;
-}
-
-
-
-
-/* ===== Nút Lưu & Quay lại ===== */
+/* ===== Nút ===== */
 .btn {
-    font-weight: 500;
-    border-radius: 8px;
-    padding: 10px 20px;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 11px 22px;
     font-size: 15px;
-    transition: all 0.2s ease-in-out;
+    transition: 0.2s ease-in-out;
 }
 
 .btn-primary {
@@ -76,7 +108,7 @@ textarea.form-control {
 }
 .btn-primary:hover {
     background-color: #0b5ed7;
-    transform: scale(1.03);
+    transform: translateY(-1px);
 }
 
 .btn-secondary {
@@ -85,31 +117,35 @@ textarea.form-control {
 }
 .btn-secondary:hover {
     background-color: #5c636a;
-    transform: scale(1.03);
+    transform: translateY(-1px);
 }
 
 /* Icon trong nút */
-.btn i {
-    margin-right: 5px;
+.btn i { margin-right: 6px; }
+
+/* ===== Toast ===== */
+.custom-toast {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    padding: 14px 22px;
+    border-radius: 10px;
+    color: #fff;
+    font-weight: 500;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+    z-index: 9999;
+    animation: fadeSlide 0.3s ease forwards;
 }
 
-/* ===== Validation ===== */
-.text-danger {
-    font-size: 14px;
+@keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
-    .content-main {
-        padding: 20px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    }
-
-    .btn {
-        width: 100%;
-        margin-bottom: 10px;
-    }
-
+    .content-main { padding: 25px; }
+    .btn { width: 100%; margin-bottom: 10px; }
     .d-flex.justify-content-between {
         flex-direction: column;
         gap: 10px;

@@ -1,0 +1,190 @@
+.content-main {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    padding: 25px 35px;
+    min-height: 100%;
+}
+
+/* ===== Header ===== */
+.header-assignment {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.header-assignment h4 {
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.search-box {
+    position: relative;
+}
+.search-box input {
+    padding: 8px 36px 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 15px;
+}
+.search-box i {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+}
+
+.sort-select {
+    flex: 1;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 15px;
+    border: 1px solid #ccc;
+    color: #333;
+    background-color: #fff;
+    transition: 0.2s;
+}
+
+.sort-select:hover,
+.sort-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13,110,253,0.15);
+    outline: none;
+}
+
+.btn-add {
+    
+    background-color: #0d6efd;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 500;
+    transition: 0.2s;
+}
+.btn-add:hover {
+    background-color: #0b5ed7;
+    transform: scale(1.03);
+}
+
+/* ===== Danh sách ===== */
+.assignment-list {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* ===== Card ===== */
+.assignment-card {
+    background-color: #f8fbff;
+    border-radius: 12px;
+    padding: 18px 24px;
+    display: flex;
+    justify-content: space-between;
+    transition: 0.25s ease;
+    border: 1px solid #e5e9f2;
+}
+
+.assignment-card:hover {
+    background-color: #f2f7ff;
+    box-shadow: 0 3px 6px rgba(13, 110, 253, 0.12);
+}
+
+/* ===== Thông tin ===== */
+.assignment-info {
+    flex: 1;
+}
+
+.assignment-title {
+    font-weight: 600;
+    font-size: 17px;
+    color: #212529;
+    margin-bottom: 4px;
+}
+
+.assignment-desc {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 6px;
+}
+
+.meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #666;
+}
+
+.meta i {
+    color: #0d6efd;
+    margin-right: 4px;
+}
+
+/* ===== Badge ===== */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 10px;
+    border-radius: 8px;
+}
+
+/* ===== Actions ===== */
+.assignment-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.assignment-actions .buttons {
+    display: flex;
+    gap: 6px;
+}
+
+.assignment-actions .btn {
+    border-radius: 6px;
+    padding: 6px 8px;
+    transition: 0.2s;
+}
+
+/* Nút màu */
+.btn-outline-primary:hover {
+    background-color: #0d6efd;
+    color: #fff;
+}
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: #fff;
+}
+.btn-outline-success:hover {
+    background-color: #198754;
+    color: #fff;
+}
+
+@media (max-width: 768px) {
+    .assignment-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .assignment-actions {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 10px;
+        margin-top: 10px;
+    }
+}

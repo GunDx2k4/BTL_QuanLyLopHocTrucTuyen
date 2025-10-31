@@ -6,6 +6,7 @@ using BTL_QuanLyLopHocTrucTuyen.Helpers;
 using BTL_QuanLyLopHocTrucTuyen.Middlewares;
 using BTL_QuanLyLopHocTrucTuyen.Models.Enums;
 using BTL_QuanLyLopHocTrucTuyen.Repositories;
+using BTL_QuanLyLopHocTrucTuyen.Services;
 using BTL_QuanLyLopHocTrucTuyen.Repositories.MySql;
 using BTL_QuanLyLopHocTrucTuyen.Repositories.SqlServer;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -13,6 +14,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -63,24 +65,25 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddSingleton<IAuthorizationHandler, UserPermissionAuthorizationHandler>();
 
-builder.Services.AddDbContext<ApplicationDbContext, MySqlDbContext>(options =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("MySqlConnection");
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-});
+// builder.Services.AddDbContext<ApplicationDbContext, MySqlDbContext>(options =>
+// {
+//     var connectionString = builder.Configuration.GetConnectionString("MySqlConnection");
+//     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+// });
 
-// builder.Services.AddDbContext<ApplicationDbContext, SqlServerDbContext>(options =>
-//     options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnection")));
+builder.Services.AddDbContext<ApplicationDbContext, SqlServerDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnection")));
 
-builder.Services.AddScoped<ICourseRepository, MySqlCourseRepository>();
-builder.Services.AddScoped<IUserRepository, MySqlUserRepository>();
-builder.Services.AddScoped<ITenantRepository, MySqlTenantRepository>();
+// builder.Services.AddScoped<ICourseRepository, MySqlCourseRepository>();
+// builder.Services.AddScoped<IUserRepository, MySqlUserRepository>();
+// builder.Services.AddScoped<ITenantRepository, MySqlTenantRepository>();
 
-// builder.Services.AddScoped<ICourseRepository, SqlServerCourseRepository>();
-// builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
-// builder.Services.AddScoped<ITenantRepository, SqlServerTenantRepository>();
+builder.Services.AddScoped<ICourseRepository, SqlServerCourseRepository>();
+builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
+builder.Services.AddScoped<ITenantRepository, SqlServerTenantRepository>();
 
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<SupabaseStorageService>();
 
 var app = builder.Build();
 

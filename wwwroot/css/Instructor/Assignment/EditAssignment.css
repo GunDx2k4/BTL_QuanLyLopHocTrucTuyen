@@ -1,19 +1,14 @@
-/* ===== Tổng thể form ===== */
+/* ===== Khung form chính ===== */
 .content-main {
-    background: #ffffff;
+    background: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-    margin: 0px auto;
+    margin: 30px auto;
     padding: 30px 40px;
     max-width: 900px;
     width: 95%;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    transition: all 0.3s ease;
 }
 
-/* Tiêu đề form */
 .content-main h3 {
     color: #0d6efd;
     font-weight: 600;
@@ -21,43 +16,30 @@
     text-align: center;
 }
 
-/* ===== Label & Input ===== */
+/* ===== Input, Label ===== */
 .form-label {
     font-weight: 500;
     color: #333;
-    margin-bottom: 6px;
 }
 
-.form-control, 
-textarea.form-control {
+.form-control, .form-select {
     border-radius: 8px;
     padding: 10px 12px;
     font-size: 15px;
     border: 1px solid #ced4da;
-    transition: 0.25s ease;
+    transition: 0.2s;
 }
 
-/* Khi focus vào input */
-.form-control:focus, 
-textarea.form-control:focus {
+.form-control:focus, .form-select:focus {
     border-color: #0d6efd;
-    box-shadow: 0 0 0 3px rgba(13,110,253,0.2);
-    outline: none;
+    box-shadow: 0 0 0 3px rgba(13,110,253,0.15);
 }
 
-/* Textarea */
-textarea.form-control {
-    resize: vertical;
-    min-height: 100px;
-}
-
-/* ===== Nút Lưu & Quay lại ===== */
+/* ===== Nút ===== */
 .btn {
     font-weight: 500;
     border-radius: 8px;
     padding: 10px 20px;
-    font-size: 15px;
-    transition: all 0.2s ease-in-out;
 }
 
 .btn-primary {
@@ -78,21 +60,10 @@ textarea.form-control {
     transform: scale(1.03);
 }
 
-/* Icon trong nút */
-.btn i {
-    margin-right: 5px;
-}
-
-/* ===== Validation ===== */
-.text-danger {
-    font-size: 14px;
-}
-
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
     .content-main {
         padding: 20px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
 
     .btn {
