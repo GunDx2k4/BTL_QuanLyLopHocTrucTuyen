@@ -53,10 +53,11 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 
             if (!ModelState.IsValid)
             {
-                return Json(new { success = false, errors = ModelState.Values
-                        .SelectMany(v => v.Errors)
-                        .Select(e => e.ErrorMessage)
-                        .ToList() });
+                return Json(new
+                {
+                    success = false,
+                    errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
+                });
             }
 
             material.Id = Guid.NewGuid();
@@ -64,7 +65,6 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 
             try
             {
-                // ✅ Upload file lên Supabase (nếu có)
                 if (material.UploadFile != null && material.UploadFile.Length > 0)
                 {
                     var publicUrl = await _supabaseStorage.UploadFileAsync(material.UploadFile, "materials");
@@ -85,7 +85,6 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
             }
         }
 
-
         /* =====================================================
            ✏️ CHỈNH SỬA TÀI LIỆU
         ===================================================== */
@@ -103,9 +102,12 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditMaterial([FromForm] Material material)
         {
+            Console.WriteLine("===== 🧩 BẮT ĐẦU CẬP NHẬT TÀI LIỆU =====");
+            Console.WriteLine($"📘 Tiêu đề: {material.Title}");
+
             var existing = await _context.Materials.FindAsync(material.Id);
             if (existing == null)
-                return NotFound();
+                return Json(new { success = false, message = "Không tìm thấy tài liệu!" });
 
             try
             {
@@ -115,11 +117,14 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                 existing.IsPublic = material.IsPublic;
                 existing.ExternalFileUrl = material.ExternalFileUrl;
 
-                // ✅ Nếu có file mới thì xóa file cũ rồi upload lại
+                // ✅ Nếu có file mới → xóa file cũ rồi upload lại
                 if (material.UploadFile != null && material.UploadFile.Length > 0)
                 {
                     if (!string.IsNullOrEmpty(existing.UploadedFileUrl))
+                    {
+                        Console.WriteLine($"🧹 Xóa file cũ: {existing.UploadedFileUrl}");
                         await _supabaseStorage.DeleteFileAsync(existing.UploadedFileUrl);
+                    }
 
                     var newUrl = await _supabaseStorage.UploadFileAsync(material.UploadFile, "materials");
                     existing.UploadedFileUrl = newUrl;
@@ -128,16 +133,16 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 
                 await _context.SaveChangesAsync();
 
-                Console.WriteLine($"✏️ Đã cập nhật tài liệu '{existing.Title}'");
-                TempData["SuccessMessage"] = "✅ Cập nhật tài liệu thành công!";
-                return RedirectToAction(nameof(Material));
+                Console.WriteLine($"✅ Đã cập nhật tài liệu '{existing.Title}'");
+                return Json(new { success = true });
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Lỗi EditMaterial: {ex.Message}");
-                return View("~/Views/Instructor/MaterialInstructor/EditMaterial.cshtml", material);
+                return Json(new { success = false, message = ex.Message });
             }
         }
+
 
         /* =====================================================
            🗑️ XÓA TÀI LIỆU

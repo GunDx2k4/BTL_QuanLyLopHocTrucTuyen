@@ -31,19 +31,28 @@ namespace BTL_QuanLyLopHocTrucTuyen.Services
             var storage = _client.Storage;
             var bucket = storage.From(_bucketName);
 
-            // 🧩 Chuẩn hoá tên file (xóa dấu, khoảng trắng, ký tự đặc biệt)
-            string cleanName = NormalizeFileName(Path.GetFileNameWithoutExtension(file.FileName));
-            string extension = Path.GetExtension(file.FileName);
-            string supabasePath = $"{folderName}/{cleanName}_{Guid.NewGuid()}{extension}";
+            // 🧩 Làm sạch tên file gốc (loại bỏ dấu, ký tự đặc biệt, khoảng trắng)
+            string safeFileName = RemoveVietnamese(file.FileName);
+            safeFileName = Path.GetFileNameWithoutExtension(safeFileName);
+            safeFileName = new string(safeFileName
+                .Where(c => char.IsLetterOrDigit(c) || c == '_' || c == '-')
+                .ToArray());
+            safeFileName = safeFileName.Replace(" ", "_").ToLower();
 
-            // 🔹 Tạo thư mục tạm trong hệ thống (AppData\Local\Temp\SupabaseUploads)
+            // 🧩 Tạo tên file duy nhất
+            string ext = Path.GetExtension(file.FileName);
+            string uniqueName = $"{safeFileName}_{Guid.NewGuid()}{ext}";
+
+            string supabasePath = $"{folderName}/{uniqueName}";
+
+            // 🔹 Tạo thư mục tạm
             string tempFolder = Path.Combine(Path.GetTempPath(), "SupabaseUploads");
             if (!Directory.Exists(tempFolder))
                 Directory.CreateDirectory(tempFolder);
 
-            string tempFilePath = Path.Combine(tempFolder, $"{Guid.NewGuid()}{extension}");
+            string tempFilePath = Path.Combine(tempFolder, $"{Guid.NewGuid()}{ext}");
 
-            // 🔹 Ghi file upload vào file tạm
+            // 🔹 Ghi file thật vào thư mục tạm
             await using (var stream = new FileStream(tempFilePath, FileMode.Create))
             {
                 await file.CopyToAsync(stream);
@@ -51,20 +60,20 @@ namespace BTL_QuanLyLopHocTrucTuyen.Services
 
             try
             {
-                // ✅ Đúng thứ tự: Upload(local_path, remote_path, options)
+                // 🔹 Upload file lên Supabase
                 await bucket.Upload(tempFilePath, supabasePath, new Supabase.Storage.FileOptions
                 {
                     ContentType = file.ContentType,
                     Upsert = false
                 });
 
+                // 🔹 Xóa file tạm
                 try { System.IO.File.Delete(tempFilePath); } catch { }
 
                 string publicUrl = bucket.GetPublicUrl(supabasePath);
                 Console.WriteLine($"✅ Uploaded to Supabase: {publicUrl}");
                 return publicUrl;
-}
-
+            }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Lỗi upload Supabase: {ex.Message}");
@@ -83,40 +92,52 @@ namespace BTL_QuanLyLopHocTrucTuyen.Services
             if (string.IsNullOrEmpty(fileUrl))
                 return;
 
-            var storage = _client.Storage;
-            var bucket = storage.From(_bucketName);
+            try
+            {
+                var storage = _client.Storage;
+                var bucket = storage.From(_bucketName);
 
-            // Lấy phần đường dẫn tương đối sau tên bucket
-            string baseUrl = bucket.GetPublicUrl("");
-            string relativePath = fileUrl.Replace(baseUrl, "").TrimStart('/');
+                // ✅ Lấy phần đường dẫn sau /object/public/<bucketName>/
+                var uri = new Uri(fileUrl);
+                string pathAfterBucket = uri.AbsolutePath;
 
-            await bucket.Remove(new List<string> { relativePath });
-            Console.WriteLine($"🗑️ Đã xóa file Supabase: {relativePath}");
+                // Tìm vị trí của bucket name và cắt phần sau nó
+                int index = pathAfterBucket.IndexOf($"/{_bucketName}/");
+                if (index >= 0)
+                {
+                    pathAfterBucket = pathAfterBucket.Substring(index + _bucketName.Length + 2); // +2 vì có "//"
+                }
+
+                // Giải mã URL (trường hợp có %20, %2F,...)
+                pathAfterBucket = Uri.UnescapeDataString(pathAfterBucket);
+
+                Console.WriteLine($"🗑️ Đang xóa file Supabase: {pathAfterBucket}");
+                await bucket.Remove(new List<string> { pathAfterBucket });
+
+                Console.WriteLine("✅ File đã được xóa khỏi Supabase!");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Lỗi DeleteFileAsync: {ex.Message}");
+            }
         }
-        private static string NormalizeFileName(string fileName)
+
+        private string RemoveVietnamese(string input)
         {
-            // Xóa dấu tiếng Việt
-            string normalized = fileName.Normalize(NormalizationForm.FormD);
+            if (string.IsNullOrWhiteSpace(input)) return input;
+            string formD = input.Normalize(NormalizationForm.FormD);
             var sb = new StringBuilder();
 
-            foreach (var c in normalized)
+            foreach (var ch in formD)
             {
-                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(ch);
                 if (unicodeCategory != UnicodeCategory.NonSpacingMark)
-                    sb.Append(c);
+                    sb.Append(ch);
             }
 
-            normalized = sb.ToString().Normalize(NormalizationForm.FormC);
-
-            // Chuyển về chữ thường, thay khoảng trắng bằng "_"
-            normalized = normalized.ToLower()
-                                .Replace(" ", "_");
-
-            // Loại bỏ ký tự không hợp lệ trong tên file
-            foreach (char ch in Path.GetInvalidFileNameChars())
-                normalized = normalized.Replace(ch, '_');
-
-            return normalized;
+            return sb.ToString().Normalize(NormalizationForm.FormC)
+                .Replace('đ', 'd')
+                .Replace('Đ', 'D');
         }
 
 
