@@ -1,20 +1,21 @@
-using System.Net;
-using System.Security.Claims;
-using System.Text.Json.Serialization;
 using BTL_QuanLyLopHocTrucTuyen.Authorizations;
 using BTL_QuanLyLopHocTrucTuyen.Data;
 using BTL_QuanLyLopHocTrucTuyen.Helpers;
 using BTL_QuanLyLopHocTrucTuyen.Middlewares;
+using BTL_QuanLyLopHocTrucTuyen.Models;
 using BTL_QuanLyLopHocTrucTuyen.Models.Enums;
 using BTL_QuanLyLopHocTrucTuyen.Repositories;
-using BTL_QuanLyLopHocTrucTuyen.Services;
 using BTL_QuanLyLopHocTrucTuyen.Repositories.MySql;
 using BTL_QuanLyLopHocTrucTuyen.Repositories.SqlServer;
+using BTL_QuanLyLopHocTrucTuyen.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Net;
+using System.Security.Claims;
+using System.Text.Json.Serialization;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -84,12 +85,18 @@ builder.Services.AddDbContext<ApplicationDbContext, SqlServerDbContext>(options 
 builder.Services.AddScoped<ICourseRepository, MySqlCourseRepository>();
 builder.Services.AddScoped<IUserRepository, MySqlUserRepository>();
 builder.Services.AddScoped<ITenantRepository, MySqlTenantRepository>();
-builder.Services.AddScoped<IRoleRepository, MySqlRoleRepository>();
+builder.Services.AddScoped<IEnrollmentRepository, MySqlEnrollmentRepository>();
+builder.Services.AddScoped<ISubmissionRepository, MySqlSubmissionRepository>();
+builder.Services.AddScoped<IAssignmentRepository, MySqlAssignmentRepository>();
 
 // builder.Services.AddScoped<ICourseRepository, SqlServerCourseRepository>();
 // builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
 // builder.Services.AddScoped<ITenantRepository, SqlServerTenantRepository>();
+builder.Services.Configure<FileUploadSettings>(
+    builder.Configuration.GetSection("FileUploadSettings"));
 
+// Services
+builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<SupabaseStorageService>();
 

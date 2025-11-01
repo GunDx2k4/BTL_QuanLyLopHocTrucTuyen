@@ -79,5 +79,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Models
 
         [JsonIgnore]
         public ICollection<Submission> Submissions { get; set; } = new List<Submission>();
+        public DateTime DueDate { get; set; }
+
     }
 }

@@ -1,0 +1,171 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-3">👨‍🎓 Tổng quan học tập</h2>
+            <p class="text-muted">Chào mừng bạn đến với hệ thống quản lý lớp học trực tuyến</p>
+        </div>
+    </div>
+
+    <!-- Thống kê -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Khóa học đã đăng ký</h5>
+                    <p class="card-text display-4">@ViewBag.TotalCourses</p>
+                    <small>Dữ liệu đã được cập nhật</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Bài tập cần nộp</h5>
+                    <p class="card-text display-4">@ViewBag.PendingAssignments</p>
+                    <small>Dữ liệu đã được cập nhật</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Bài đã nộp</h5>
+                    <p class="card-text display-4">@ViewBag.TotalSubmissions</p>
+                    <small>Dữ liệu đã được cập nhật</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Điểm trung bình</h5>
+                    <p class="card-text display-4">@ViewBag.AverageGrade</p>
+                    <small>Dữ liệu đã được cập nhật</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu chức năng chính -->
+    <div class="row">
+        <div class="col-12">
+            <h4 class="mb-3">📚 Chức năng</h4>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">📖 Khóa học của tôi</h5>
+                    <p class="card-text">Xem danh sách khóa học đã đăng ký và tài liệu học tập</p>
+                    <a href="@Url.Action("MyCourses", "Student")" class="btn btn-primary">Xem khóa học</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">➕ Đăng ký khóa học</h5>
+                    <p class="card-text">Tìm kiếm và đăng ký các khóa học mới</p>
+                    <a href="@Url.Action("AvailableCourses", "Student")" class="btn btn-success">Đăng ký ngay</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">📝 Bài tập</h5>
+                    <p class="card-text">Xem và nộp bài tập được giao</p>
+                    <a href="@Url.Action("Assignments", "Student")" class="btn btn-warning text-white">Xem bài tập</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">📄 Bài đã nộp</h5>
+                    <p class="card-text">Xem lại các bài tập đã nộp</p>
+                    <a href="@Url.Action("MySubmissions", "Student")" class="btn btn-info text-white">Xem bài nộp</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">🎯 Điểm số</h5>
+                    <p class="card-text">Xem điểm số và kết quả học tập</p>
+                    <a href="@Url.Action("Grades", "Student")" class="btn btn-secondary">Xem điểm</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">📊 Báo cáo</h5>
+                    <p class="card-text">Xem báo cáo tiến độ học tập</p>
+                    <a href="@Url.Action("Reports", "Student")" class="btn btn-dark">Xem báo cáo</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bài tập sắp đến hạn -->
+    @if (ViewBag.UpcomingAssignments != null && ViewBag.UpcomingAssignments.Count > 0)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <h4 class="mb-3">⏰ Bài tập sắp đến hạn</h4>
+            </div>
+        </div>
+
+        <div class="row">
+            @foreach (var assignment in ViewBag.UpcomingAssignments)
+            {
+                <div class="col-md-6 mb-3">
+                    <div class="card border-warning">
+                        <div class="card-body">
+                            <h5 class="card-title">@assignment.Title</h5>
+                            <p class="mb-2">
+                                <strong>📚 Khóa học:</strong>
+                                @(assignment.Lesson?.Course?.Name ?? "N/A")
+                            </p>
+                            <p class="mb-2">
+                                <strong>⏰ Hạn nộp:</strong>
+                                <span class="text-danger">@assignment.DueDate.ToString("dd/MM/yyyy HH:mm")</span>
+                            </p>
+                            <a href="@Url.Action("SubmitAssignment", "Student", new { id = assignment.Id })"
+                               class="btn btn-warning btn-sm">
+                                📤 Nộp bài ngay
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Thông báo -->
+    <div class="row">
+        <div class="col-12">
+            <h4 class="mb-3">🔔 Thông báo gần đây</h4>
+            <div class="alert alert-info" role="alert">
+                <strong>Chào mừng!</strong> Bạn có @ViewBag.PendingAssignments bài tập cần nộp và @ViewBag.TotalCourses khóa học đang học.
+            </div>
+        </div>
+    </div>
+</div>

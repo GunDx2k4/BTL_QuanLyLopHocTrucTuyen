@@ -13,6 +13,8 @@ public abstract class ApplicationDbContext : DbContext
     public DbSet<Material> Materials { get; set; }
     public DbSet<Tenant> Tenants { get; set; }
     public DbSet<Role> Roles { get; set; }
+    public DbSet<Enrollment> Enrollments { get; set; }
+    public DbSet<Submission> Submissions { get; set; }
 
     protected ApplicationDbContext(DbContextOptions options) : base(options) { }
 
