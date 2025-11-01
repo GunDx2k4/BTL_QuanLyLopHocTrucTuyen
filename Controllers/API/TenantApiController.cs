@@ -87,7 +87,12 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
                 return BadRequest(new { message = "User already belongs to a tenant." });
             }
 
-            var (tenant, roleManager, roleInstructorDefault, roleStudentDefault) = await user.SetupNewTenant(request.Name, request.Plan);
+            if (request.Plan != PlanType.Free && request.EndTime == null)
+            {
+                return BadRequest(new { message = "EndTime is required for paid plans." });
+            }
+
+            var (tenant, roleManager, roleInstructorDefault, roleStudentDefault) = await user.SetupNewTenant(request.Name, request.Plan, request.EndTime);
 
             await tenantRepository.AddAsync(tenant);
             await roleRepository.AddAsync(roleManager);

@@ -7,12 +7,13 @@ namespace BTL_QuanLyLopHocTrucTuyen.Helpers;
 
 public static class SetupHelper
 {
-    public static async Task<(Tenant, Role, Role, Role)> SetupNewTenant(this User user, string tenantName, PlanType planType)
+    public static async Task<(Tenant, Role, Role, Role)> SetupNewTenant(this User user, string tenantName, PlanType planType, DateTime? endTime = null)
     {
         var tenant = new Tenant
         {
             Name = tenantName,
             Plan = planType,
+            EndTime = endTime,
             OwnerId = user.Id
         };
 
