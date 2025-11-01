@@ -1,0 +1,190 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-2">📖 Khóa học của tôi</h2>
+            <p class="text-muted">Danh sách các khóa học bạn đã đăng ký</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="@Url.Action("AvailableCourses", "Student")" class="btn btn-success">
+                ➕ Đăng ký khóa học mới
+            </a>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" id="courseTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab">
+                🎯 Đang học (@ViewBag.ActiveCourses.Count)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">
+                ✅ Đã hoàn thành (@ViewBag.CompletedCourses.Count)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="dropped-tab" data-bs-toggle="tab" data-bs-target="#dropped" type="button" role="tab">
+                ❌ Đã hủy (@ViewBag.DroppedCourses.Count)
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="courseTabsContent">
+
+        <!-- Đang học -->
+        <div class="tab-pane fade show active" id="active" role="tabpanel">
+            <div class="row">
+                @if (ViewBag.ActiveCourses.Count > 0)
+                {
+                    @foreach (var enrollment in ViewBag.ActiveCourses)
+                    {
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="card-title mb-0">@enrollment.Course.Name</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text text-muted mb-2">
+                                        <small>👨‍🏫 Giảng viên: @(enrollment.Course.Instructor?.FullName ?? "Chưa có")</small>
+                                    </p>
+                                    <p class="card-text mb-3">
+                                        @(enrollment.Course.Description ?? "Không có mô tả")
+                                    </p>
+
+                                    <!-- Progress bar -->
+                                    <div class="mb-3">
+                                        <small class="text-muted">Tiến độ: @enrollment.Progress%</small>
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar" style="width: @enrollment.Progress%"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            ⏰ Đăng ký: @enrollment.EnrolledAt.ToString("dd/MM/yyyy")
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-white">
+                                    <a href="@Url.Action("CourseDetails", "Student", new { id = enrollment.CourseId })"
+                                       class="btn btn-sm btn-primary w-100">
+                                        📚 Xem chi tiết
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="col-12">
+                        <div class="alert alert-info" role="alert">
+                            <h5>📚 Chưa có khóa học nào đang học</h5>
+                            <p class="mb-0">
+                                Bạn chưa đăng ký khóa học nào.
+                                <a href="@Url.Action("AvailableCourses", "Student")">Đăng ký ngay</a>!
+                            </p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Đã hoàn thành -->
+        <div class="tab-pane fade" id="completed" role="tabpanel">
+            <div class="row">
+                @if (ViewBag.CompletedCourses.Count > 0)
+                {
+                    @foreach (var enrollment in ViewBag.CompletedCourses)
+                    {
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="card-title mb-0">@enrollment.Course.Name</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text text-muted mb-2">
+                                        <small>👨‍🏫 Giảng viên: @(enrollment.Course.Instructor?.FullName ?? "Chưa có")</small>
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>📊 Điểm cuối:</strong>
+                                        @(enrollment.FinalGrade?.ToString("0.0") ?? "Chưa có")
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>✅ Hoàn thành:</strong>
+                                        @enrollment.Progress%
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-white">
+                                    <a href="@Url.Action("CourseDetails", "Student", new { id = enrollment.CourseId })"
+                                       class="btn btn-sm btn-success w-100">
+                                        📚 Xem lại
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="col-12">
+                        <div class="alert alert-success" role="alert">
+                            <h5>✅ Chưa có khóa học nào hoàn thành</h5>
+                            <p class="mb-0">Các khóa học đã hoàn thành sẽ hiển thị tại đây.</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Đã hủy -->
+        <div class="tab-pane fade" id="dropped" role="tabpanel">
+            <div class="row">
+                @if (ViewBag.DroppedCourses.Count > 0)
+                {
+                    @foreach (var enrollment in ViewBag.DroppedCourses)
+                    {
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-header bg-danger text-white">
+                                    <h5 class="card-title mb-0">@enrollment.Course.Name</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text text-muted mb-2">
+                                        <small>👨‍🏫 Giảng viên: @(enrollment.Course.Instructor?.FullName ?? "Chưa có")</small>
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>❌ Đã hủy:</strong>
+                                        @(enrollment.DroppedAt?.ToString("dd/MM/yyyy") ?? "N/A")
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>📊 Tiến độ lúc hủy:</strong>
+                                        @enrollment.Progress%
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="col-12">
+                        <div class="alert alert-warning" role="alert">
+                            <h5>❌ Chưa có khóa học nào bị hủy</h5>
+                            <p class="mb-0">Các khóa học bạn đã hủy đăng ký sẽ hiển thị tại đây.</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+    </div>
+</div>

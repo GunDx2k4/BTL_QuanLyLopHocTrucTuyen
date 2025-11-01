@@ -1,0 +1,180 @@
+﻿@model List<BTL_QuanLyLopHocTrucTuyen.Models.Assignment>
+
+@{
+    ViewData["Title"] = "Bài tập của tôi";
+    var submissions = ViewBag.Submissions as List<BTL_QuanLyLopHocTrucTuyen.Models.Submission>;
+}
+
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-2">📝 Bài tập của tôi</h2>
+            <p class="text-muted">Danh sách bài tập từ các khóa học đã đăng ký</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="@Url.Action("MySubmissions", "Student")" class="btn btn-info text-white">
+                📄 Bài đã nộp
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <h3 class="text-primary mb-0">@ViewBag.TotalAssignments</h3>
+                    <small class="text-muted">Tổng số bài tập</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-danger">
+                <div class="card-body">
+                    <h3 class="text-danger mb-0">@ViewBag.UpcomingCount</h3>
+                    <small class="text-muted">Cần nộp gấp</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <h3 class="text-warning mb-0">@ViewBag.PendingCount</h3>
+                    <small class="text-muted">Chưa nộp</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h3 class="text-success mb-0">@ViewBag.SubmittedCount</h3>
+                    <small class="text-muted">Đã nộp</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignments List -->
+    <div class="row">
+        @if (Model != null && Model.Count > 0)
+        {
+            @foreach (var assignment in Model)
+            {
+                var submission = submissions?.FirstOrDefault(s => s.AssignmentId == assignment.Id);
+                var hasSubmitted = submission != null;
+                var isGraded = submission?.Grade.HasValue ?? false;
+                var timeRemaining = assignment.DueDate - DateTime.UtcNow;
+                var isOverdue = timeRemaining.TotalSeconds < 0;
+                var isUrgent = timeRemaining.TotalDays < 2 && !isOverdue;
+
+                var cardClass = hasSubmitted ? "border-success" : (isOverdue ? "border-danger" : (isUrgent ? "border-warning" : "border-primary"));
+                var headerClass = hasSubmitted ? "bg-success" : (isOverdue ? "bg-danger" : (isUrgent ? "bg-warning" : "bg-primary"));
+
+                <div class="col-12 mb-3">
+                    <div class="card @cardClass">
+                        <div class="card-header @headerClass text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">📝 @assignment.Title</h5>
+                                @if (hasSubmitted)
+                                {
+                                    <span class="badge bg-light text-success">✅ Đã nộp</span>
+                                }
+                                else if (isOverdue)
+                                {
+                                    <span class="badge bg-light text-danger">⚠️ Quá hạn</span>
+                                }
+                                else if (isUrgent)
+                                {
+                                    <span class="badge bg-light text-dark">⏰ Còn @((int)timeRemaining.TotalDays) ngày</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-primary">📅 @assignment.DueDate.ToString("dd/MM")</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <p class="mb-2"><strong>📚 Khóa học:</strong> @(assignment.Lesson?.Course?.Name ?? "N/A")</p>
+                                    <p class="mb-2"><strong>👨‍🏫 Giảng viên:</strong> @(assignment.Lesson?.Course?.Instructor?.FullName ?? "N/A")</p>
+                                    <p class="mb-2"><strong>📄 Mô tả:</strong> @(assignment.Description ?? "Không có mô tả")</p>
+                                    <p class="mb-2">
+                                        <strong>⏰ Hạn nộp:</strong>
+                                        <span class="@(isOverdue ? "text-danger" : (isUrgent ? "text-warning" : ""))">
+                                            @assignment.DueDate.ToString("dd/MM/yyyy HH:mm")
+                                        </span>
+                                    </p>
+
+                                    @if (hasSubmitted)
+                                    {
+                                        <p class="mb-2">
+                                            <strong>📅 Đã nộp:</strong> @submission.SubmittedAt.ToString("dd/MM/yyyy HH:mm")
+                                        </p>
+                                        @if (isGraded)
+                                        {
+                                            <p class="mb-0">
+                                                <strong>🎯 Điểm:</strong>
+                                                <span class="badge bg-primary">@submission.Grade?.ToString("0.0")/10</span>
+                                            </p>
+                                        }
+                                        else
+                                        {
+                                            <p class="mb-0">
+                                                <strong>📊 Trạng thái:</strong>
+                                                <span class="badge bg-warning text-dark">Chờ chấm điểm</span>
+                                            </p>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <p class="mb-0">
+                                            <strong>📊 Trạng thái:</strong>
+                                            <span class="badge bg-warning text-dark">Chưa nộp</span>
+                                        </p>
+                                    }
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    @if (hasSubmitted)
+                                    {
+                                        <a href="@Url.Action("SubmissionDetails", "Student", new { id = submission.Id })"
+                                           class="btn btn-success btn-lg mb-2 w-100">
+                                            📄 Xem bài nộp
+                                        </a>
+                                        @if (!isGraded)
+                                        {
+                                            <a href="@Url.Action("SubmitAssignment", "Student", new { id = assignment.Id })"
+                                               class="btn btn-outline-warning w-100">
+                                                🔄 Nộp lại
+                                            </a>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <a href="@Url.Action("SubmitAssignment", "Student", new { id = assignment.Id })"
+                                           class="btn @(isOverdue ? "btn-danger" : (isUrgent ? "btn-warning" : "btn-primary")) btn-lg w-100">
+                                            📤 Nộp bài @(isOverdue ? "ngay" : "")
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <h5>📝 Chưa có bài tập nào</h5>
+                    <p class="mb-0">
+                        Bạn chưa có bài tập nào.
+                        <a href="@Url.Action("MyCourses", "Student")">Xem khóa học</a> để nhận bài tập.
+                    </p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
