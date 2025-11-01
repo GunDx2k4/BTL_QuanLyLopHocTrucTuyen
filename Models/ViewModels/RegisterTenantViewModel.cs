@@ -12,4 +12,6 @@ public class RegisterTenantViewModel
 
     [Required(ErrorMessage = "Vui lòng chọn gói dịch vụ.")]
     public required PlanType Plan { get; set; }
+
+    public DateTime? EndTime { get; set; }
 }
