@@ -30,7 +30,6 @@
     <Folder Include="Migrations/" />
     <Folder Include="Migrations\" />
     <Folder Include="Views/Instructor/HomeInstructor/" />
-    <Folder Include="Views/Student/" />
   </ItemGroup>
 
 </Project>

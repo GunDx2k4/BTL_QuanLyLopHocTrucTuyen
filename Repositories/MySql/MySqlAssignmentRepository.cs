@@ -14,6 +14,59 @@ namespace BTL_QuanLyLopHocTrucTuyen.Repositories.MySql
             _context = context;
         }
 
+        // ===== GENERIC CRUD METHODS (FOR INSTRUCTOR) =====
+
+        public async Task<IEnumerable<Assignment>> FindAsync()
+        {
+            return await _context.Assignments
+                .Include(a => a.Lesson)
+                .Include(a => a.Submissions)
+                .ToListAsync();
+        }
+
+        public async Task<Assignment?> FindByIdAsync(Guid id)
+        {
+            return await _context.Assignments
+                .Include(a => a.Lesson)
+                .Include(a => a.Submissions)
+                .FirstOrDefaultAsync(a => a.Id == id);
+        }
+
+        public async Task<Assignment?> AddAsync(Assignment assignment)
+        {
+            _context.Assignments.Add(assignment);
+            await _context.SaveChangesAsync();
+
+            // Load navigation properties
+            await _context.Entry(assignment).Reference(a => a.Lesson).LoadAsync();
+            await _context.Entry(assignment).Collection(a => a.Submissions).LoadAsync();
+
+            return assignment;
+        }
+
+        public async Task<int> UpdateAsync(Assignment assignment)
+        {
+            _context.Assignments.Update(assignment);
+            var result = await _context.SaveChangesAsync();
+
+            // Reload navigation properties
+            await _context.Entry(assignment).Reference(a => a.Lesson).LoadAsync();
+            await _context.Entry(assignment).Collection(a => a.Submissions).LoadAsync();
+
+            return result;
+        }
+
+        public async Task<int> DeleteByIdAsync(Guid id)
+        {
+            var assignment = await _context.Assignments.FindAsync(id);
+            if (assignment == null) return 0;
+
+            _context.Assignments.Remove(assignment);
+            return await _context.SaveChangesAsync();
+        }
+
+        // ===== STUDENT-SPECIFIC METHODS =====
+
         public async Task<List<Assignment>> GetAssignmentsByCourseIdAsync(Guid courseId)
         {
             return await _context.Assignments

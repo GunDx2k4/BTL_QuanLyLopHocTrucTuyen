@@ -13,7 +13,7 @@ public static class SetupHelper
         {
             Name = tenantName,
             Plan = planType,
-            Owner = user
+            OwnerId = user.Id
         };
 
         var roleManager = new Role

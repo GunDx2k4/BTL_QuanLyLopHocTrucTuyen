@@ -43,6 +43,12 @@ public class SqlServerCourseRepository(SqlServerDbContext context) : ICourseRepo
     {
         _dbSet.Update(entity);
         var updated = await context.SaveChangesAsync();
+        
+        await context.Entry(entity).Reference(c => c.Instructor).LoadAsync();
+        await context.Entry(entity).Reference(c => c.Tenant).LoadAsync();
+        await context.Entry(entity).Collection(c => c.Lessons).LoadAsync();
+        await context.Entry(entity).Collection(c => c.Enrollments).LoadAsync();
+
         return updated;
     }
 

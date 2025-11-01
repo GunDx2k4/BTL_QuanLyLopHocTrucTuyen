@@ -23,13 +23,24 @@
 
     // ✅ Giả lập danh sách bài học khác (trong thực tế bạn sẽ lấy từ database)
     var relatedLessons = ViewBag.AllLessons as List<BTL_QuanLyLopHocTrucTuyen.Models.Lesson>;
-    var currentIndex = relatedLessons?.FindIndex(x => x.Id == Model.Id) ?? -1;
-     var prevLesson = (currentIndex > 0)
-        ? relatedLessons[currentIndex - 1]
-        : null;
-    var nextLesson = (currentIndex >= 0 && currentIndex < relatedLessons.Count - 1)
-        ? relatedLessons[currentIndex + 1]
-        : null;
+
+    BTL_QuanLyLopHocTrucTuyen.Models.Lesson? prevLesson = null;
+    BTL_QuanLyLopHocTrucTuyen.Models.Lesson? nextLesson = null;
+
+    if (relatedLessons != null)
+    {
+        var currentIndex = relatedLessons.FindIndex(x => x.Id == Model.Id);
+
+        if (currentIndex > 0)
+        {
+            prevLesson = relatedLessons[currentIndex - 1];
+        }
+
+        if (currentIndex >= 0 && currentIndex < relatedLessons.Count - 1)
+        {
+            nextLesson = relatedLessons[currentIndex + 1];
+        }
+    }
 }
 
 

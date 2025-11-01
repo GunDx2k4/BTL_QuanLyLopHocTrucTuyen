@@ -111,7 +111,7 @@
     <script>
         const logout = (event) => {
                 event.preventDefault();
-                fetch('api/authen/logout', { method: 'POST' })
+                fetch('/api/authen/logout', { method: 'POST' })
                     .then(response => {
                         if (response.ok) {
                             window.location.href = '/home/index';

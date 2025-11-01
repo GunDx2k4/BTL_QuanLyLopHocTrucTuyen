@@ -19,36 +19,30 @@ public static class ConverterHelper
         return sessionIdClaim != null ? Guid.Parse(sessionIdClaim) : Guid.Empty;
     }
 
-    public static bool TryParseIsoWeek(string input, out DateTime startOfWeek)
+    public static bool TryParseIsoWeek(string input, out DateTime monday)
     {
-        startOfWeek = default;
-        if (!Regex.IsMatch(input, @"^\d{4}-W\d{2}$"))
+        monday = default;
+
+        if (string.IsNullOrWhiteSpace(input))
             return false;
 
-        // Kiểm tra đúng dạng YYYY-Www
+        // Dạng "2025-W44"
         var parts = input.Split("-W");
-        int year = int.Parse(parts[0]);
-        int week = int.Parse(parts[1]);
+        if (parts.Length != 2)
+            return false;
 
-        // Xác định ngày đầu tiên của năm
-        DateTime jan1 = new DateTime(year, 1, 1);
-        int daysOffset = DayOfWeek.Thursday - jan1.DayOfWeek;
+        if (!int.TryParse(parts[0], out int year)) return false;
+        if (!int.TryParse(parts[1], out int week)) return false;
 
-        // ISO 8601: tuần 1 là tuần chứa Thứ Năm đầu tiên của năm
-        DateTime firstThursday = jan1.AddDays(daysOffset);
-
-        int firstWeek = CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(
-            firstThursday,
-            CalendarWeekRule.FirstFourDayWeek,
-            DayOfWeek.Monday
-        );
-
-        int weekDiff = week - firstWeek;
-        DateTime result = firstThursday.AddDays(weekDiff * 7);
-
-        // Lấy ngày thứ Hai đầu tuần
-        startOfWeek = result.AddDays(-3);
-        return true;
+        try
+        {
+            monday = ISOWeek.ToDateTime(year, week, DayOfWeek.Monday);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
 

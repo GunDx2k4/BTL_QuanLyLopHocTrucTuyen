@@ -71,12 +71,10 @@
                 },
                 body: JSON.stringify(data)
             });
-
-            const result = await res.json();
-
             if (res.ok) {
-                showModal("Đăng ký thành công!", "/");
+                showModal("Đăng ký thành công!", "/" );
             } else {
+                const result = await res.json();
                 $("#resultMessage").html(`
                     <div class="alert alert-danger d-flex align-items-center" role="alert">
                         <i class="bi bi-x-circle-fill me-2"></i>

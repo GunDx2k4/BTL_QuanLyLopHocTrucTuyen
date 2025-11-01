@@ -38,9 +38,14 @@ public class SqlServerUserRepository(SqlServerDbContext context) : IUserReposito
 
     public async Task<int> UpdateAsync(User entity)
     {
-
         _dbSet.Update(entity);
-        return await context.SaveChangesAsync();
+
+        var updated = await context.SaveChangesAsync();
+
+        await context.Entry(entity).Reference(u => u.Role).LoadAsync();
+        await context.Entry(entity).Reference(u => u.Tenant).LoadAsync();
+
+        return updated;
     }
 
     public async Task<int> DeleteAllAsync()

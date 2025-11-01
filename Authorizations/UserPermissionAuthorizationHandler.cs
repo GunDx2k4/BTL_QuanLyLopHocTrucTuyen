@@ -9,8 +9,6 @@ namespace BTL_QuanLyLopHocTrucTuyen.Authorizations;
 
 public class UserPermissionAuthorizationHandler(IServiceScopeFactory scopeFactory) : AuthorizationHandler<UserPermissionAuthorizeAttribute>
 {
-    private readonly IUserRepository userRepository = scopeFactory.CreateScope().ServiceProvider.GetRequiredService<IUserRepository>();
-
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, UserPermissionAuthorizeAttribute requirement)
     {
         if (!context.User.Identity!.IsAuthenticated)
@@ -26,6 +24,7 @@ public class UserPermissionAuthorizationHandler(IServiceScopeFactory scopeFactor
             return;
         }
 
+        var userRepository = scopeFactory.CreateScope().ServiceProvider.GetRequiredService<IUserRepository>();
         var userPermissions = await userRepository.GetUserPermissionAsync(userId);
 
         if (!userPermissions.HasValue)

@@ -56,7 +56,11 @@ public class MySqlRoleRepository(MySqlDbContext context) : IRoleRepository
     public async Task<int> UpdateAsync(Role entity)
     {
         _dbSet.Update(entity);
-        return await context.SaveChangesAsync();
+        var updated = await context.SaveChangesAsync();
+
+        await context.Entry(entity).Reference(u => u.Tenant).LoadAsync();
+        
+        return updated;
     }
 
     public async Task<bool> RoleNameExistsAsync(string name, Guid tenantId)

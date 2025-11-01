@@ -38,7 +38,6 @@ public class Course : Entity
     [ForeignKey("Instructor")]
     [Required]
     public required Guid InstructorId { get; set; }
-    [JsonIgnore]
     public User? Instructor { get; set; }
 
     [JsonIgnore]

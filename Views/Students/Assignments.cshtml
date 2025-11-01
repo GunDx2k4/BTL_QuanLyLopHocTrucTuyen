@@ -1,128 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Http;
-using BTL_QuanLyLopHocTrucTuyen.Core.Models;
+﻿
+@{
+    ViewData["Title"] = "Bài tập của tôi";
+    var submissions = ViewBag.Submissions as List<BTL_QuanLyLopHocTrucTuyen.Models.Submission>;
+}
 
-namespace BTL_QuanLyLopHocTrucTuyen.Models
-{
-    /// <summary>
-    /// Bài tập được giao cho sinh viên
-    ///
-</summary>
-    [Index(nameof(LessonId))]
-    [Index(nameof(DueDate))]
-    public class Assignment : Entity
-    {
-        // ===== 🧩 THÔNG TIN CƠ BẢN =====
-        [Required(ErrorMessage = "Tên bài tập là bắt buộc")]
-        [MaxLength(200, ErrorMessage = "Tên bài tập không được vượt quá 200 ký tự")]
-        [Display(Name = "Tên bài tập")]
-        public string Title { get; set; } = string.Empty;
 
-        [MaxLength(1000, ErrorMessage = "Mô tả không được vượt quá 1000 ký tự")]
-        [Display(Name = "Mô tả")]
-        public string? Description { get; set; }
 
-        // ===== 📎 FILE NGOÀI (Drive / PDF / Link) =====
-        [Url(ErrorMessage = "Đường dẫn liên kết ngoài không hợp lệ")]
-        [Display(Name = "Liên kết ngoài (Google Drive, PDF, v.v.)")]
-        public string? ExternalFileUrl { get; set; }
 
-        // ===== 💾 FILE NỘI BỘ (Upload từ máy) =====
-        [Display(Name = "Tên tệp tải lên")]
-        [MaxLength(255)]
-        public string? UploadedFileName { get; set; }
 
-        [Display(Name = "Đường dẫn tệp nội bộ")]
-        public string? UploadedFileUrl { get; set; }
 
-        [NotMapped]
-        [Display(Name = "Tệp tải lên (tùy chọn)")]
-        public IFormFile? UploadFile { get; set; }
-
-        // ===== 🧮 ĐIỂM & PHÂN LOẠI =====
-        [Range(1, 100, ErrorMessage = "Điểm tối đa phải nằm trong khoảng 1 đến 100")]
-        [Display(Name = "Điểm tối đa")]
-        public int MaxScore { get; set; } = 100;  // Changed to 100 for consistency
-
-        [Required(ErrorMessage = "Loại bài tập là bắt buộc")]
-        [MaxLength(50, ErrorMessage = "Loại bài tập không được vượt quá 50 ký tự")]
-        [Display(Name = "Loại bài tập")]
-        public string Type { get; set; } = "Bài tập";
-
-        // ===== ⏰ THỜI GIAN =====
-        [DataType(DataType.DateTime)]
-        [Display(Name = "Ngày tạo")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;  // ✅ Changed to UtcNow
-
-        [DataType(DataType.DateTime)]
-        [Display(Name = "Có thể làm từ")]
-        public DateTime? AvailableFrom { get; set; }
-
-        [Required(ErrorMessage = "Hạn nộp là bắt buộc")]
-        [DataType(DataType.DateTime)]
-        [Display(Name = "Hạn nộp")]
-        public DateTime DueDate { get; set; }  // ✅ Renamed from AvailableUntil
-
-        // ===== 🌍 TRẠNG THÁI =====
-        [Display(Name = "Công khai cho sinh viên")]
-        public bool IsPublic { get; set; } = false;
-
-        [NotMapped]
-        [Display(Name = "Đã hết hạn")]
-        public bool IsOverdue => DueDate < DateTime.UtcNow;  // ✅ Use UtcNow
-
-        [NotMapped]
-        [Display(Name = "Còn lại (ngày)")]
-        public int DaysRemaining => (DueDate - DateTime.UtcNow).Days;
-
-        [NotMapped]
-        [Display(Name = "Sắp hết hạn")]
-        public bool IsUrgent => !IsOverdue && DaysRemaining <= 2;
-
-        // ===== 🔗 LIÊN KẾT =====
-        [Required(ErrorMessage = "Bài học là bắt buộc")]
-        [ForeignKey("Lesson")]
-        [Display(Name = "Bài học")]
-        public Guid LessonId { get; set; }
-
-        [JsonIgnore]
-        public Lesson? Lesson { get; set; }
-
-        [JsonIgnore]
-        public ICollection<Submission>
-    Submissions { get; set; } = new List<Submission>
-        ();
-
-        // ===== 📊 HELPER METHODS =====
-
-        /// <summary>
-            /// Lấy file URL (ưu tiên external, fallback internal)
-            ///
-</summary>
-        [NotMapped]
-        public string? FileUrl => !string.IsNullOrEmpty(ExternalFileUrl)
-        ? ExternalFileUrl
-        : UploadedFileUrl;
-
-        /// <summary>
-            /// Check xem có file đính kèm không
-            ///
-</summary>
-        [NotMapped]
-        public bool HasAttachment => !string.IsNullOrEmpty(FileUrl);
-
-        /// <summary>
-            /// Validate DueDate phải sau AvailableFrom
-            ///
-</summary>
-        public bool IsValidDateRange()
+                                    {
+            }
+        }
+        else
         {
-        if (!AvailableFrom.HasValue) return true;
-        return DueDate > AvailableFrom.Value;
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <h5>📝 Chưa có bài tập nào</h5>
+                    <p class="mb-0">
+                        Bạn chưa có bài tập nào.
+                        <a href="@Url.Action("MyCourses", "Student")">Xem khóa học</a> để nhận bài tập.
+                    </p>
+                </div>
+            </div>
         }
-        }
-        }
+    </div>
+</div>

@@ -230,7 +230,7 @@
                     if (!response.ok) throw new Error('Không thể tải lịch học');
                     const data = await response.json();
 
-                    renderSchedule(data.lessons, weekValue);
+                    renderSchedule(data, weekValue);
                 } catch (err) {
                     console.error(err);
                     scheduleContainer.html('<div class="text-danger text-center fst-italic">Lỗi khi tải lịch học</div>');
