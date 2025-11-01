@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using BTL_QuanLyLopHocTrucTuyen.Data;
 using BTL_QuanLyLopHocTrucTuyen.Models;
+using BTL_QuanLyLopHocTrucTuyen.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
@@ -8,37 +9,37 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 {
     [Route("Instructor/[action]")]
     public class LessonInstructorController : Controller
-    {   
-        private readonly SqlServerDbContext _context;
-        public LessonInstructorController(SqlServerDbContext context)
+    {
+        private readonly ILessonRepository _lessonRepository;
+        private readonly ICourseRepository _courseRepository;
+
+        public LessonInstructorController(ILessonRepository lessonRepository, ICourseRepository courseRepository)
         {
-            _context = context;
+            _lessonRepository = lessonRepository;
+            _courseRepository = courseRepository;
         }
         [HttpGet]
         public async Task<IActionResult> Lesson()
         {
-            var lessons = await _context.Lessons
-                .Include(l => l.Course)
+            var lessons = (await _lessonRepository.FindAsync())
                 .OrderByDescending(l => l.BeginTime)
-                .ToListAsync();
+                .ToList();
+
             return View("~/Views/Instructor/LessonInstructor/Lesson.cshtml", lessons);
         }
         [HttpGet]
         public async Task<IActionResult> DetailLesson(Guid id)
         {
-            var lesson = await _context.Lessons
-                .Include(l => l.Materials)
-                .Include(l => l.Assignments)
-                .Include(l => l.Course)
-                .FirstOrDefaultAsync(l => l.Id == id);
+
+            var lesson = await _lessonRepository.FindByIdAsync(id);
 
             if (lesson == null)
             {
                 return NotFound();
             }
-             var allLessons = await _context.Lessons
+            var allLessons = (await _lessonRepository.FindAsync())
                 .OrderBy(l => l.BeginTime)
-                .ToListAsync();
+                .ToList();
 
             ViewBag.AllLessons = allLessons;
 
@@ -46,8 +47,10 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         }
 
         [HttpGet]
-        public IActionResult AddLesson()
+        public async Task<IActionResult> AddLesson()
         {
+            // Provide courses for selection if needed in the view
+            ViewBag.Courses = (await _courseRepository.FindAsync()).OrderBy(c => c.Name).ToList();
             return View("~/Views/Instructor/LessonInstructor/AddLesson.cshtml");
         }
         [HttpPost]
@@ -61,15 +64,14 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
             lesson.Id = Guid.NewGuid();
             lesson.Status = Models.Enums.ScheduleStatus.Planned;
 
-            _context.Add(lesson);
-            await _context.SaveChangesAsync();
+            await _lessonRepository.AddAsync(lesson);
             return Json(new { success = true });
 
         }
         [HttpGet]
         public async Task<IActionResult> EditLesson(Guid id)
         {
-            var lesson = await _context.Lessons.FindAsync(id);
+            var lesson = await _lessonRepository.FindByIdAsync(id);
             if (lesson == null)
             {
                 return NotFound();
@@ -86,7 +88,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                 return View("~/Views/Instructor/LessonInstructor/EditLesson.cshtml", lesson);
             }
 
-            var existingLesson = await _context.Lessons.FindAsync(lesson.Id);
+            var existingLesson = await _lessonRepository.FindByIdAsync(lesson.Id);
             if (existingLesson == null)
             {
                 return NotFound();
@@ -101,8 +103,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 
             try
             {
-                _context.Update(existingLesson);
-                await _context.SaveChangesAsync();
+                await _lessonRepository.UpdateAsync(existingLesson);
 
                 TempData["SuccessMessage"] = "✅ Cập nhật bài học thành công!";
                 return RedirectToAction(nameof(Lesson));
@@ -116,7 +117,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [HttpDelete]
         public async Task<IActionResult> DeleteLesson(Guid id)
         {
-            var lesson = await _context.Lessons.FindAsync(id);
+            var lesson = await _lessonRepository.FindByIdAsync(id);
             if (lesson == null)
             {
                 return Json(new { success = false, message = "Không tìm thấy bài học!" });
@@ -124,8 +125,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 
             try
             {
-                _context.Lessons.Remove(lesson);
-                await _context.SaveChangesAsync();
+                await _lessonRepository.DeleteByIdAsync(id);
                 return Json(new { success = true });
             }
             catch (Exception ex)

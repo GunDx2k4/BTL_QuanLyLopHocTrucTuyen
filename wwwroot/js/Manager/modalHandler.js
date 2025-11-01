@@ -167,6 +167,7 @@ $("#formAddCourse").on("submit", (e) => {
             description: $("#courseDescription").val(),
             beginTime: $("#beginTime").val(),
             endTime: $("#endTime").val(),
+            tenantId: tenantId,
             instructorId: $("#instructorId").val()
         })
     }).then(response => {

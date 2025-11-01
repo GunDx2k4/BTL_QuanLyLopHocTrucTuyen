@@ -1,6 +1,7 @@
 using BTL_QuanLyLopHocTrucTuyen.Data;
 using BTL_QuanLyLopHocTrucTuyen.Models;
 using BTL_QuanLyLopHocTrucTuyen.Services;
+using BTL_QuanLyLopHocTrucTuyen.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,12 +10,17 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
     [Route("Instructor/[action]")]
     public class AssignmentInstructorController : Controller
     {
-        private readonly SqlServerDbContext _context;
+        private readonly IAssignmentRepository _assignmentRepository;
+        private readonly ILessonRepository _lessonRepository;
         private readonly SupabaseStorageService _supabaseStorage;
 
-        public AssignmentInstructorController(SqlServerDbContext context, SupabaseStorageService supabaseStorage)
+        public AssignmentInstructorController(
+            IAssignmentRepository assignmentRepository,
+            ILessonRepository lessonRepository,
+            SupabaseStorageService supabaseStorage)
         {
-            _context = context;
+            _assignmentRepository = assignmentRepository;
+            _lessonRepository = lessonRepository;
             _supabaseStorage = supabaseStorage;
         }
 
@@ -24,10 +30,9 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [HttpGet]
         public async Task<IActionResult> Assignment()
         {
-            var assignments = await _context.Assignments
-                .Include(a => a.Lesson)
+            var assignments = (await _assignmentRepository.FindAsync())
                 .OrderByDescending(a => a.CreatedAt)
-                .ToListAsync();
+                .ToList();
 
             return View("~/Views/Instructor/AssignmentInstructor/Assignment.cshtml", assignments);
         }
@@ -38,7 +43,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [HttpGet]
         public async Task<IActionResult> AddAssignment(Guid? lessonId)
         {
-            ViewBag.Lessons = await _context.Lessons.OrderBy(l => l.Title).ToListAsync();
+            ViewBag.Lessons = (await _lessonRepository.FindAsync()).OrderBy(l => l.Title).ToList();
             var assignment = new Assignment { LessonId = lessonId ?? Guid.Empty };
             return View("~/Views/Instructor/AssignmentInstructor/AddAssignment.cshtml", assignment);
         }
@@ -52,7 +57,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 
             if (!ModelState.IsValid)
             {
-                ViewBag.Lessons = await _context.Lessons.OrderBy(l => l.Title).ToListAsync();
+                ViewBag.Lessons = (await _lessonRepository.FindAsync()).OrderBy(l => l.Title).ToList();
                 return View("~/Views/Instructor/AssignmentInstructor/AddAssignment.cshtml", assignment);
             }
 
@@ -69,8 +74,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                     assignment.UploadedFileName = assignment.UploadFile.FileName;
                 }
 
-                _context.Assignments.Add(assignment);
-                await _context.SaveChangesAsync();
+                await _assignmentRepository.AddAsync(assignment);
 
                 Console.WriteLine($"✅ Đã thêm bài tập '{assignment.Title}' với file: {assignment.UploadedFileUrl}");
                 TempData["SuccessMessage"] = "✅ Thêm bài tập thành công!";
@@ -79,7 +83,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Lỗi khi thêm bài tập: {ex.Message}");
-                ViewBag.Lessons = await _context.Lessons.OrderBy(l => l.Title).ToListAsync(); // ✅ Thêm dòng này
+                ViewBag.Lessons = (await _lessonRepository.FindAsync()).OrderBy(l => l.Title).ToList(); // ✅ Thêm dòng này
                 return View("~/Views/Instructor/AssignmentInstructor/AddAssignment.cshtml", assignment);
             }
 
@@ -91,10 +95,9 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [HttpGet]
         public async Task<IActionResult> EditAssignment(Guid id)
         {
-            var assignment = await _context.Assignments.FindAsync(id);
+            var assignment = await _assignmentRepository.FindByIdAsync(id);
             if (assignment == null) return NotFound();
-
-            ViewBag.Lessons = await _context.Lessons.OrderBy(l => l.Title).ToListAsync();
+            ViewBag.Lessons = (await _lessonRepository.FindAsync()).OrderBy(l => l.Title).ToList();
             return View("~/Views/Instructor/AssignmentInstructor/EditAssignment.cshtml", assignment);
         }
 
@@ -102,7 +105,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditAssignment([FromForm] Assignment assignment)
         {
-            var existing = await _context.Assignments.FindAsync(assignment.Id);
+            var existing = await _assignmentRepository.FindByIdAsync(assignment.Id);
             if (existing == null)
                 return NotFound();
 
@@ -128,7 +131,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                     existing.UploadedFileName = assignment.UploadFile.FileName;
                 }
 
-                await _context.SaveChangesAsync();
+                await _assignmentRepository.UpdateAsync(existing);
 
                 Console.WriteLine($"✏️ Đã cập nhật bài tập '{existing.Title}'");
                 TempData["SuccessMessage"] = "✅ Cập nhật bài tập thành công!";
@@ -147,7 +150,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [HttpDelete]
         public async Task<IActionResult> DeleteAssignment(Guid id)
         {
-            var assignment = await _context.Assignments.FindAsync(id);
+            var assignment = await _assignmentRepository.FindByIdAsync(id);
             if (assignment == null)
                 return Json(new { success = false, message = "Không tìm thấy bài tập để xóa!" });
 
@@ -156,8 +159,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                 if (!string.IsNullOrEmpty(assignment.UploadedFileUrl))
                     await _supabaseStorage.DeleteFileAsync(assignment.UploadedFileUrl);
 
-                _context.Assignments.Remove(assignment);
-                await _context.SaveChangesAsync();
+                await _assignmentRepository.DeleteByIdAsync(id);
 
                 Console.WriteLine($"🗑️ Đã xóa bài tập '{assignment.Title}'");
                 return Json(new { success = true });
@@ -176,14 +178,14 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> TogglePublicAssignment(Guid id)
         {
-            var assignment = await _context.Assignments.FindAsync(id);
+            var assignment = await _assignmentRepository.FindByIdAsync(id);
             if (assignment == null)
                 return Json(new { success = false, message = "Không tìm thấy bài tập." });
 
             try
             {
                 assignment.IsPublic = !assignment.IsPublic;
-                await _context.SaveChangesAsync();
+                await _assignmentRepository.UpdateAsync(assignment);
 
                 Console.WriteLine($"🌍 Đã cập nhật công khai: {assignment.Title} = {assignment.IsPublic}");
                 return Json(new { success = true, isPublic = assignment.IsPublic });

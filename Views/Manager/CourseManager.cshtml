@@ -1,3 +1,235 @@
 ﻿@{
-    Layout = "_LayoutManager"; 
+    Layout = "_LayoutManager";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0">Quản lý Khóa Học</h1>
+        <div>
+            <a class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCourse">➕ Thêm Khoá Học</a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm bg-white">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="coursesTable">
+                    <thead>
+                        <tr>
+                            <th>Tên</th>
+                            <th>Giảng viên</th>
+                            <th>Bắt đầu</th>
+                            <th>Kết thúc</th>
+                            <th>Đăng ký</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- rows sẽ được render bởi JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@await Html.PartialAsync("_ModalCourse")
+@await Html.PartialAsync("_ModalStudent")
+
+@section Scripts {
+    <script>
+        let courses = [];
+        let editingCourseId = null;
+        let enrollingCourseId = null;
+
+        async function loadCourses() {
+            const tBody = $('#coursesTable tbody');
+            tBody.html('<tr><td colspan="6" class="text-center text-muted">Đang tải...</td></tr>');
+            try {
+                const res = await fetch('/api/courses');
+                if (!res.ok) throw new Error('Không thể tải danh sách khóa học');
+                courses = await res.json();
+                renderCourses();
+            } catch (err) {
+                tBody.html('<tr><td colspan="6" class="text-danger text-center">Lỗi khi tải dữ liệu</td></tr>');
+                console.error(err);
+            }
+        }
+
+        function renderCourses() {
+            const tBody = $('#coursesTable tbody');
+            if (!courses || courses.length === 0) {
+                tBody.html('<tr><td colspan="6" class="text-center">Không có khóa học</td></tr>');
+                return;
+            }
+
+            const rows = courses.map(c => {
+                const begin = c.beginTime ? new Date(c.beginTime).toLocaleDateString('vi-VN') : '-';
+                const end = c.endTime ? new Date(c.endTime).toLocaleDateString('vi-VN') : '-';
+                const instructor = (c.instructor && c.instructor.fullName) ? `${c.instructor.fullName}` : 'Chưa có';
+                const enrolledCount = (c.enrollments ? c.enrollments.length : 0);
+                return `
+                    <tr data-id="${c.id}">
+                        <td>${escapeHtml(c.name)}</td>
+                        <td>${escapeHtml(instructor)}</td>
+                        <td>${begin}</td>
+                        <td>${end}</td>
+                        <td>${enrolledCount}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-success" onclick="onEnroll('${c.id}')">➕ Thêm SV</button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="onEdit('${c.id}')">✏️ Sửa</button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="onDelete('${c.id}')">🗑️ Xóa</button>
+                            </div>
+                        </td>
+                    </tr>`;
+            }).join('');
+            tBody.html(rows);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/[&<>\"]+/g, function (s) {
+                return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[s];
+            });
+        }
+
+        function onEdit(id) {
+            const course = courses.find(x => x.id === id);
+            if (!course) return alert('Khóa học không tồn tại');
+            editingCourseId = id;
+            // Prefill modalCourse inputs
+            $('#courseName').val(course.name);
+            $('#courseDescription').val(course.description || '');
+            if (course.beginTime) $('#beginTime').val(new Date(course.beginTime).toISOString().slice(0,10));
+            if (course.endTime) $('#endTime').val(new Date(course.endTime).toISOString().slice(0,10));
+            // set instructor select after instructor list loaded (modalHandler.js will populate)
+            $('#modalCourse').on('shown.bs.modal.editprefill', () => {
+                $('#instructorId').val(course.instructorId || '');
+                $('#modalCourse').off('shown.bs.modal.editprefill');
+            });
+            // override submit to perform PUT
+            $('#formAddCourse').off('submit.courseEdit').on('submit.courseEdit', async function (e) {
+                e.preventDefault();
+                const payload = {
+                    id: editingCourseId,
+                    name: $('#courseName').val(),
+                    description: $('#courseDescription').val(),
+                    beginTime: $('#beginTime').val(),
+                    endTime: $('#endTime').val(),
+                    instructorId: $('#instructorId').val(),
+                    tenantId: null
+                };
+                try {
+                    const resp = await fetch('/api/courses', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!resp.ok) throw new Error(resp.statusText);
+                    $('#modalCourse').modal('hide');
+                    await loadCourses();
+                    showMessage('Cập nhật khóa học thành công');
+                } catch (err) {
+                    $('#alertCourse').removeClass('d-none').text('Lỗi: ' + err.message);
+                }
+            });
+            $('#modalCourse').modal('show');
+        }
+
+        function onDelete(id) {
+            if (!confirm('Bạn có chắc muốn xóa khóa học này?')) return;
+            fetch(`/api/courses/${id}`, { method: 'DELETE' })
+                .then(res => {
+                    if (!res.ok) throw new Error(res.statusText);
+                    showMessage('Xóa khóa học thành công', null);
+                    loadCourses();
+                }).catch(err => {
+                    alert('Lỗi: ' + err.message);
+                });
+        }
+
+        function onEnroll(id) {
+            enrollingCourseId = id;
+            // override student form to enroll after creating student
+            $('#formAddStudent').off('submit.courseEnroll').on('submit.courseEnroll', async function (e) {
+                e.preventDefault();
+                const payload = {
+                    fullName: $('#studentName').val(),
+                    email: $('#studentEmail').val(),
+                    password: $('#studentPassword').val()
+                };
+                try {
+                    const createResp = await fetch('/api/users/students', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!createResp.ok) throw new Error('Không thể tạo học viên: ' + createResp.statusText);
+                    const created = await createResp.json();
+                    // assume created contains id
+                    const userId = created.id || created.Id || null;
+                    if (!userId) {
+                        // fallback: reload and notify user to enroll manually
+                        $('#modalStudent').modal('hide');
+                        showMessage('Học viên đã được tạo. Vui lòng kiểm tra và đăng ký thủ công nếu cần.');
+                        return;
+                    }
+
+                    // call enroll API - backend expected to support manager enroll: /api/student/enroll with { courseId, userId }
+                    const enrollResp = await fetch('/api/student/enroll', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ courseId: enrollingCourseId, userId: userId })
+                    });
+
+                    if (!enrollResp.ok) throw new Error('Không thể đăng ký học viên vào khóa học');
+                    $('#modalStudent').modal('hide');
+                    showMessage('Thêm học viên vào khóa học thành công');
+                    await loadCourses();
+                } catch (err) {
+                    $('#alert').removeClass('d-none').text('Lỗi: ' + err.message);
+                }
+            });
+            // show modal (modalHandler.js also binds formAddStudent but we unbound above)
+            $('#modalStudent').modal('show');
+        }
+
+        function showMessage(message, redirect = null) {
+            // reuse global showModal if available
+            if (typeof showModal === 'function') {
+                showModal(message, redirect);
+                return;
+            }
+            alert(message);
+            if (redirect) window.location.href = redirect;
+        }
+
+        // Reset modal overrides when closing modals so default handlers can work elsewhere
+        $('#modalCourse').on('hidden.bs.modal', () => {
+            editingCourseId = null;
+            $('#formAddCourse').off('submit.courseEdit');
+            $('#alertCourse').addClass('d-none').text('');
+            // clear inputs
+            $('#courseName').val('');
+            $('#courseDescription').val('');
+            $('#beginTime').val('');
+            $('#endTime').val('');
+            $('#instructorId').val('');
+        });
+
+        $('#modalStudent').on('hidden.bs.modal', () => {
+            enrollingCourseId = null;
+            $('#formAddStudent').off('submit.courseEnroll');
+            $('#alert').addClass('d-none').text('');
+            $('#studentName').val('');
+            $('#studentEmail').val('');
+            $('#studentPassword').val('');
+        });
+
+        // load on ready
+        $(document).ready(() => {
+            loadCourses();
+        });
+    </script>
 }

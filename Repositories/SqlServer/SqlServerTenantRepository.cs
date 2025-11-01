@@ -52,7 +52,14 @@ public class SqlServerTenantRepository(SqlServerDbContext context) : ITenantRepo
     public async Task<int> UpdateAsync(Tenant entity)
     {
         _dbSet.Update(entity);
-        return await context.SaveChangesAsync();
+        
+        var updated = await context.SaveChangesAsync();
+
+        await context.Entry(entity).Reference(t => t.Owner).LoadAsync();
+        await context.Entry(entity).Collection(t => t.Roles).LoadAsync();
+        await context.Entry(entity).Collection(t => t.Users).LoadAsync();
+
+        return updated;
     }
 
     public async Task<Tenant?> FindTenantByOwnerIdAsync(Guid ownerId)

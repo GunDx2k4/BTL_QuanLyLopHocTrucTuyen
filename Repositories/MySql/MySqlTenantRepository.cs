@@ -12,7 +12,7 @@ public class MySqlTenantRepository(MySqlDbContext context) : ITenantRepository
         .Include(t => t.Owner)
         .Include(t => t.Roles)
         .Include(t => t.Users)
-        .Include(t => t.Courses);
+        .Include(t => t.Courses).ThenInclude(c => c.Lessons);
 
     public async Task<Tenant?> AddAsync(Tenant entity)
     {
@@ -53,7 +53,15 @@ public class MySqlTenantRepository(MySqlDbContext context) : ITenantRepository
     public async Task<int> UpdateAsync(Tenant entity)
     {
         _dbSet.Update(entity);
-        return await context.SaveChangesAsync();
+        
+        var updated = await context.SaveChangesAsync();
+
+        await context.Entry(entity).Reference(t => t.Owner).LoadAsync();
+        await context.Entry(entity).Collection(t => t.Roles).LoadAsync();
+        await context.Entry(entity).Collection(t => t.Users).LoadAsync();
+        await context.Entry(entity).Collection(t => t.Courses).LoadAsync();
+
+        return updated;
     }
 
     public async Task<Tenant?> FindTenantByOwnerIdAsync(Guid ownerId)

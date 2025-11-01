@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using BTL_QuanLyLopHocTrucTuyen.Data;
 using BTL_QuanLyLopHocTrucTuyen.Models;
 using BTL_QuanLyLopHocTrucTuyen.Services;
+using BTL_QuanLyLopHocTrucTuyen.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace BTL_QuanLyLopHocTrucTuyen.Controllers
@@ -9,12 +10,14 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
     [Route("Instructor/[action]")]
     public class MaterialInstructorController : Controller
     {
-        private readonly SqlServerDbContext _context;
+        private readonly IMaterialRepository _materialRepository;
+        private readonly ILessonRepository _lessonRepository;
         private readonly SupabaseStorageService _supabaseStorage;
 
-        public MaterialInstructorController(SqlServerDbContext context, SupabaseStorageService supabaseStorage)
+        public MaterialInstructorController(IMaterialRepository materialRepository, ILessonRepository lessonRepository, SupabaseStorageService supabaseStorage)
         {
-            _context = context;
+            _materialRepository = materialRepository;
+            _lessonRepository = lessonRepository;
             _supabaseStorage = supabaseStorage;
         }
 
@@ -24,11 +27,9 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [HttpGet]
         public async Task<IActionResult> Material()
         {
-            var materials = await _context.Materials
-                .Include(m => m.Lesson)
-                .Include(m => m.Uploader)
+            var materials = (await _materialRepository.FindAsync())
                 .OrderByDescending(m => m.UploadedAt)
-                .ToListAsync();
+                .ToList();
 
             return View("~/Views/Instructor/MaterialInstructor/Material.cshtml", materials);
         }
@@ -39,7 +40,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [HttpGet]
         public async Task<IActionResult> AddMaterial(Guid? lessonId)
         {
-            ViewBag.Lessons = await _context.Lessons.OrderBy(l => l.Title).ToListAsync();
+            ViewBag.Lessons = (await _lessonRepository.FindAsync()).OrderBy(l => l.Title).ToList();
             var material = new Material { LessonId = lessonId ?? Guid.Empty };
             return View("~/Views/Instructor/MaterialInstructor/AddMaterial.cshtml", material);
         }
@@ -72,8 +73,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                     material.UploadedFileName = material.UploadFile.FileName;
                 }
 
-                _context.Materials.Add(material);
-                await _context.SaveChangesAsync();
+                await _materialRepository.AddAsync(material);
 
                 Console.WriteLine($"✅ Đã thêm tài liệu '{material.Title}' với file: {material.UploadedFileUrl}");
                 return Json(new { success = true });
@@ -91,10 +91,9 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [HttpGet]
         public async Task<IActionResult> EditMaterial(Guid id)
         {
-            var material = await _context.Materials.FindAsync(id);
+            var material = await _materialRepository.FindByIdAsync(id);
             if (material == null) return NotFound();
-
-            ViewBag.Lessons = await _context.Lessons.OrderBy(l => l.Title).ToListAsync();
+            ViewBag.Lessons = (await _lessonRepository.FindAsync()).OrderBy(l => l.Title).ToList();
             return View("~/Views/Instructor/MaterialInstructor/EditMaterial.cshtml", material);
         }
 
@@ -105,7 +104,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
             Console.WriteLine("===== 🧩 BẮT ĐẦU CẬP NHẬT TÀI LIỆU =====");
             Console.WriteLine($"📘 Tiêu đề: {material.Title}");
 
-            var existing = await _context.Materials.FindAsync(material.Id);
+            var existing = await _materialRepository.FindByIdAsync(material.Id);
             if (existing == null)
                 return Json(new { success = false, message = "Không tìm thấy tài liệu!" });
 
@@ -131,7 +130,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                     existing.UploadedFileName = material.UploadFile.FileName;
                 }
 
-                await _context.SaveChangesAsync();
+                await _materialRepository.UpdateAsync(existing);
 
                 Console.WriteLine($"✅ Đã cập nhật tài liệu '{existing.Title}'");
                 return Json(new { success = true });
@@ -150,7 +149,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [HttpDelete]
         public async Task<IActionResult> DeleteMaterial(Guid id)
         {
-            var material = await _context.Materials.FindAsync(id);
+            var material = await _materialRepository.FindByIdAsync(id);
             if (material == null)
                 return Json(new { success = false, message = "Không tìm thấy tài liệu!" });
 
@@ -159,8 +158,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                 if (!string.IsNullOrEmpty(material.UploadedFileUrl))
                     await _supabaseStorage.DeleteFileAsync(material.UploadedFileUrl);
 
-                _context.Materials.Remove(material);
-                await _context.SaveChangesAsync();
+                await _materialRepository.DeleteByIdAsync(id);
 
                 Console.WriteLine($"🗑️ Đã xóa tài liệu '{material.Title}'");
                 return Json(new { success = true });
@@ -179,14 +177,14 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> TogglePublicMaterial(Guid id)
         {
-            var material = await _context.Materials.FindAsync(id);
+            var material = await _materialRepository.FindByIdAsync(id);
             if (material == null)
                 return Json(new { success = false, message = "Không tìm thấy tài liệu." });
 
             try
             {
                 material.IsPublic = !material.IsPublic;
-                await _context.SaveChangesAsync();
+                await _materialRepository.UpdateAsync(material);
 
                 Console.WriteLine($"🌍 Đã cập nhật công khai: {material.Title} = {material.IsPublic}");
                 return Json(new { success = true, isPublic = material.IsPublic });
