@@ -15,6 +15,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Caching.Memory;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -56,8 +58,12 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
                     ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     return;
                 }
+                var cache = ctx.HttpContext.RequestServices.GetRequiredService<IMemoryCache>();
+                var userId = ctx.HttpContext.User.GetUserId();
+                cache.Remove(userId);
 
-                await ctx.HttpContext.RedirectToHomePage();
+                await ctx.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                ctx.HttpContext.Response.Redirect("/Home/Login");
             }
         };
     });
@@ -72,23 +78,34 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddSingleton<IAuthorizationHandler, UserPermissionAuthorizationHandler>();
 
-// builder.Services.AddDbContext<ApplicationDbContext, MySqlDbContext>(options =>
-// {
-//     var connectionString = builder.Configuration.GetConnectionString("MySqlConnection");
-//     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-// });
+builder.Services.AddDbContext<ApplicationDbContext, MySqlDbContext>(options =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("MySqlConnection");
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+});
 
-builder.Services.AddDbContext<ApplicationDbContext, SqlServerDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnection")));
+// builder.Services.AddDbContext<ApplicationDbContext, SqlServerDbContext>(options =>
+//     options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnection")));
 
 builder.Services.AddScoped<ICourseRepository, MySqlCourseRepository>();
 builder.Services.AddScoped<IUserRepository, MySqlUserRepository>();
 builder.Services.AddScoped<ITenantRepository, MySqlTenantRepository>();
 builder.Services.AddScoped<IRoleRepository, MySqlRoleRepository>();
+builder.Services.AddScoped<IEnrollmentRepository, MySqlEnrollmentRepository>();
+builder.Services.AddScoped<ILessonRepository, MySqlLessonRepository>();
+builder.Services.AddScoped<IAssignmentRepository, MySqlAssignmentRepository>();
+builder.Services.AddScoped<IMaterialRepository, MySqlMaterialRepository>();
+builder.Services.AddScoped<ISubmissionRepository, MySqlSubmissionRepository>();
 
 // builder.Services.AddScoped<ICourseRepository, SqlServerCourseRepository>();
 // builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
 // builder.Services.AddScoped<ITenantRepository, SqlServerTenantRepository>();
+// builder.Services.AddScoped<IRoleRepository, SqlServerRoleRepository>();
+// builder.Services.AddScoped<IEnrollmentRepository, SqlServerEnrollmentRepository>();
+// builder.Services.AddScoped<ILessonRepository, SqlServerLessonRepository>();
+// builder.Services.AddScoped<IAssignmentRepository, SqlServerAssignmentRepository>();
+// builder.Services.AddScoped<IMaterialRepository, SqlServerMaterialRepository>();
+// builder.Services.AddScoped<ISubmissionRepository, SqlServerSubmissionRepository>();
 
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<SupabaseStorageService>();
