@@ -24,51 +24,6 @@ public static class PermissionHelper
         return source & ~toRemove;
     }
 
-    public static async Task RedirectToHomePage(this HttpContext context)
-    {
-        var userId = context.User.GetUserId();
-        if (userId == Guid.Empty)
-        {
-            context.Response.Redirect("/");
-            return;
-        }
-
-        var userRepository = context.RequestServices.GetRequiredService<IUserRepository>();
-        var permissions = await userRepository.GetUserPermissionAsync(userId);
-
-        if (permissions == null)
-        {
-            context.Response.Redirect("/");
-            return;
-        }
-        if (permissions == UserPermission.None)
-        {
-            context.Response.Redirect("/");
-            return;
-        }
-        if (permissions.Value.HasFlag(UserPermission.AdminUser))
-        {
-            context.Response.Redirect("/Admin");
-            return;
-        }
-        if (permissions.Value.HasFlag(UserPermission.ManagerUser))
-        {
-            context.Response.Redirect("/Manager");
-            return;
-        }
-        if (permissions.Value.HasFlag(UserPermission.InstructorUser))
-        {
-            context.Response.Redirect("/Instructor");
-            return;
-        }
-        if (permissions.Value.HasFlag(UserPermission.StudentUser))
-        {
-            context.Response.Redirect("/Student");
-            return;
-        }
-        context.Response.Redirect("/");
-    }
-    
     public static async Task<IActionResult> RedirectToHomePage(this Controller controller)
     {
         if (!controller.HttpContext.User.Identity!.IsAuthenticated) return controller.View();
@@ -85,7 +40,9 @@ public static class PermissionHelper
 
         var permissions = user.Role.Permissions;
 
-        if (permissions == UserPermission.None) return controller.View("RegisterTenant");
+        if (user.Tenant == null) return controller.View("RegisterTenant");
+
+        if (permissions == UserPermission.None) return controller.View();
 
         if (permissions.HasFlag(UserPermission.AdminUser))
         {
