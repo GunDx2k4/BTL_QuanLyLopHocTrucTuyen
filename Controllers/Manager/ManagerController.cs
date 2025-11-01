@@ -5,11 +5,12 @@ using BTL_QuanLyLopHocTrucTuyen.Repositories;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace BTL_QuanLyLopHocTrucTuyen.Controllers.Manager
 {
     [UserPermissionAuthorize(UserPermission.ManagerUser)]
-    public class ManagerController(ITenantRepository tenantRepository) : Controller
+    public class ManagerController(ITenantRepository tenantRepository, IMemoryCache memoryCache) : Controller
     {
         // GET: ManagerController
         public async Task<ActionResult> Index()
@@ -18,12 +19,16 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.Manager
             var tenant = await tenantRepository.FindTenantByOwnerIdAsync(userId);
             if (tenant == null)
             {
+                memoryCache.Remove(userId);
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 return View("Index", "Home");
             }
-            var studentCount = tenant.Users.Count(u => u.Role.Permissions.HasPermission(UserPermission.StudentUser));
-            var instructorCount = tenant.Users.Count(u => u.Role.Permissions.HasPermission(UserPermission.InstructorUser));
-            var courseCount = tenant.Courses.Count(c => c.EndTime.ToUniversalTime() > DateTime.UtcNow);
+
+            // defensive null checks to satisfy nullable analysis
+            var studentCount = tenant.Users?.Count(u => u?.Role != null && u.Role.Permissions.HasPermission(UserPermission.StudentUser)) ?? 0;
+            var instructorCount = tenant.Users?.Count(u => u?.Role != null && u.Role.Permissions.HasPermission(UserPermission.InstructorUser)) ?? 0;
+            var courseCount = tenant.Courses?.Count(c => c != null && c.EndTime.ToUniversalTime() > DateTime.UtcNow) ?? 0;
+
             ViewBag.TenantId = tenant.Id;
             ViewBag.TenantName = tenant.Name;
             ViewBag.TenantPlan = tenant.Plan;
@@ -47,7 +52,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.Manager
         public IActionResult CourseManager()
         {
             return View();
-        }   
+        }
 
     }
 }

@@ -6,7 +6,10 @@ using BTL_QuanLyLopHocTrucTuyen.Models;
 using BTL_QuanLyLopHocTrucTuyen.Models.Enums;
 using BTL_QuanLyLopHocTrucTuyen.Models.ViewModels;
 using BTL_QuanLyLopHocTrucTuyen.Repositories;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
 {
@@ -85,7 +88,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
             }
 
             var (tenant, roleManager, roleInstructorDefault, roleStudentDefault) = await user.SetupNewTenant(request.Name, request.Plan);
-            
+
             await tenantRepository.AddAsync(tenant);
             await roleRepository.AddAsync(roleManager);
             await roleRepository.AddAsync(roleInstructorDefault);
@@ -95,6 +98,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
             user.Role = roleManager;
 
             await userRepository.UpdateAsync(user);
+
 
             return Ok(new { message = "Tenant registered successfully" });
         }
@@ -130,7 +134,16 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
                 return NotFound(new { message = "Tenant not found." });
             var lessons = tenant.Courses
                 .SelectMany(c => c.Lessons)
-                .Where(l => l.BeginTime >= startDate && l.BeginTime < endDate);
+                .Where(l => l.BeginTime >= startDate && l.BeginTime < endDate)
+                .Select(l => new ScheduleViewModel
+                {
+                    Title = l.Title,
+                    Instructor = l.Course!.Instructor!,
+                    BeginTime = l.BeginTime,
+                    EndTime = l.EndTime
+                })
+                .ToList();
+
             return Ok(lessons);
         }
 
@@ -172,5 +185,5 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
             return Ok(new { message = "Tenant plan updated successfully." });
         }
     }
-    
+
 }
