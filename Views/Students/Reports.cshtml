@@ -1,0 +1,375 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+@{
+    ViewData["Title"] = "Báo cáo học tập";
+    var enrollments = ViewBag.Enrollments as List<BTL_QuanLyLopHocTrucTuyen.Models.Enrollment>;
+    var upcomingAssignments = ViewBag.UpcomingAssignments as List<BTL_QuanLyLopHocTrucTuyen.Models.Assignment>;
+    var overdueAssignments = ViewBag.OverdueAssignments as List<BTL_QuanLyLopHocTrucTuyen.Models.Assignment>;
+}
+
+<div class="container mt-4">
+    <!-- Tiêu đề trang -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-2">📊 Báo cáo học tập</h2>
+            <p class="text-muted">Thống kê chi tiết về quá trình học tập của bạn</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-success" onclick="exportReport()">
+                📥 Xuất báo cáo
+            </button>
+            <button class="btn btn-primary" onclick="window.print()">
+                🖨️ In báo cáo
+            </button>
+        </div>
+    </div>
+
+    <!-- Bộ lọc thời gian -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <select class="form-select">
+                <option selected>📅 Tất cả thời gian</option>
+                <option>Tháng này</option>
+                <option>Tháng trước</option>
+                <option>Học kỳ 1 - 2025</option>
+                <option>Học kỳ 2 - 2025</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <input type="date" class="form-control" placeholder="Từ ngày">
+        </div>
+        <div class="col-md-4">
+            <input type="date" class="form-control" placeholder="Đến ngày">
+        </div>
+    </div>
+
+    <!-- Thống kê tổng quan -->
+    <div class="row mb-4">
+        <div class="col-12 mb-3">
+            <h4>📈 Tổng quan</h4>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card text-center border-primary h-100">
+                <div class="card-body">
+                    <div class="text-primary mb-2" style="font-size: 2rem;">📚</div>
+                    <h3 class="text-primary mb-0">@ViewBag.ActiveCourses</h3>
+                    <small class="text-muted">Khóa học đang học</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card text-center border-success h-100">
+                <div class="card-body">
+                    <div class="text-success mb-2" style="font-size: 2rem;">✅</div>
+                    <h3 class="text-success mb-0">@ViewBag.CompletedAssignments</h3>
+                    <small class="text-muted">Bài tập đã hoàn thành</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card text-center border-warning h-100">
+                <div class="card-body">
+                    <div class="text-warning mb-2" style="font-size: 2rem;">⏱️</div>
+                    <h3 class="text-warning mb-0">@ViewBag.TotalHours</h3>
+                    <small class="text-muted">Giờ học tích lũy</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card text-center border-info h-100">
+                <div class="card-body">
+                    <div class="text-info mb-2" style="font-size: 2rem;">🎯</div>
+                    <h3 class="text-info mb-0">@ViewBag.AverageGrade</h3>
+                    <small class="text-muted">Điểm trung bình</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tiến độ học tập theo khóa học -->
+    <div class="card-body">
+        @if (enrollments != null && enrollments.Any(e => e.Status == BTL_QuanLyLopHocTrucTuyen.Models.Enums.EnrollmentStatus.Enrolled))
+        {
+            @foreach (var enrollment in enrollments.Where(e => e.Status == BTL_QuanLyLopHocTrucTuyen.Models.Enums.EnrollmentStatus.Enrolled))
+            {
+                var course = enrollment.Course;
+                var progress = enrollment.Progress;
+                var totalLessons = course?.Lessons?.Count ?? 0;
+                var completedLessons = (int)(totalLessons * progress / 100.0);
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <div>
+                            <h6 class="mb-1">📖 @course?.Name</h6>
+                            <small class="text-muted">Giảng viên: @(course?.Instructor?.FullName ?? "N/A")</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-success">Đang học</span>
+                            <div><strong>@progress%</strong> hoàn thành</div>
+                        </div>
+                    </div>
+                    <div class="progress" style="height: 30px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: @progress%">
+                            @completedLessons/@totalLessons bài học
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-4 text-center">
+                            <small class="text-muted">Điểm TB: @(enrollment.FinalGrade?.ToString("0.0") ?? "--")/10</small>
+                        </div>
+                        <div class="col-4 text-center">
+                            <small class="text-muted">Ngày bắt đầu: @enrollment.EnrolledAt.ToString("dd/MM/yyyy")</small>
+                        </div>
+                        <div class="col-4 text-center">
+                            <small class="text-muted">Tiến độ: @progress%</small>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-info">Chưa có khóa học đang học</div>
+        }
+    </div>
+
+    <!-- Biểu đồ hoạt động theo thời gian -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">📅 Hoạt động theo tháng</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Biểu đồ đơn giản dạng progress bar theo tháng -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Tháng 9/2025</span>
+                            <strong>12 bài tập</strong>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: 80%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Tháng 10/2025</span>
+                            <strong>8 bài tập</strong>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: 53%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Tháng 11/2025</span>
+                            <strong>5 bài tập</strong>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: 33%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">🎯 Phân bố điểm số</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Phân bố điểm -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Xuất sắc (9.0-10)</span>
+                            <strong>2 bài</strong>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 40%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Giỏi (8.0-8.9)</span>
+                            <strong>1 bài</strong>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: 20%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Khá (7.0-7.9)</span>
+                            <strong>1 bài</strong>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: 20%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Trung bình (5.0-6.9)</span>
+                            <strong>1 bài</strong>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: 20%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Yếu (< 5.0)</span>
+                            <strong>0 bài</strong>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-danger" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thống kê chi tiết -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">⚡ Hiệu suất học tập</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Tỷ lệ nộp đúng hạn</span>
+                            <strong class="text-success">85%</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Tỷ lệ hoàn thành bài tập</span>
+                            <strong class="text-info">78%</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Số bài nộp lại</span>
+                            <strong class="text-warning">2</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Số bài nộp muộn</span>
+                            <strong class="text-danger">1</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">🏆 Thành tích</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-success me-2" style="font-size: 1.5rem;">🥇</span>
+                                <div>
+                                    <div><strong>Xuất sắc</strong></div>
+                                    <small class="text-muted">2 bài đạt điểm trên 9.0</small>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="list-group-item">
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-info me-2" style="font-size: 1.5rem;">⚡</span>
+                                <div>
+                                    <div><strong>Nộp nhanh</strong></div>
+                                    <small class="text-muted">Nộp sớm trung bình 2 ngày</small>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="list-group-item">
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-warning me-2" style="font-size: 1.5rem;">📚</span>
+                                <div>
+                                    <div><strong>Siêng năng</strong></div>
+                                    <small class="text-muted">Hoàn thành 15 bài tập</small>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">⚠️ Cần chú ý</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <div class="text-danger">
+                                <strong>⏰ 2 bài tập sắp đến hạn</strong>
+                            </div>
+                            <small class="text-muted">Trong vòng 3 ngày tới</small>
+                        </li>
+                        <li class="list-group-item">
+                            <div class="text-warning">
+                                <strong>📉 Điểm Cơ sở dữ liệu: 6.8</strong>
+                            </div>
+                            <small class="text-muted">Cần cải thiện môn này</small>
+                        </li>
+                        <li class="list-group-item">
+                            <div class="text-info">
+                                <strong>📚 1 khóa học chưa bắt đầu</strong>
+                            </div>
+                            <small class="text-muted">Lập trình Python - 15/11/2025</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lời khuyên và gợi ý -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">💡 Gợi ý cải thiện</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success" role="alert">
+                        <h6 class="alert-heading">🎉 Điểm mạnh của bạn:</h6>
+                        <ul class="mb-0">
+                            <li>Nộp bài đúng hạn và sớm</li>
+                            <li>Điểm môn Lập trình Web rất tốt (8.5/10)</li>
+                            <li>Tích cực tham gia học tập</li>
+                        </ul>
+                    </div>
+                    <div class="alert alert-warning" role="alert">
+                        <h6 class="alert-heading">🎯 Cần cải thiện:</h6>
+                        <ul class="mb-0">
+                            <li>Môn Cơ sở dữ liệu cần ôn tập thêm (điểm 6.8/10)</li>
+                            <li>Chú ý hạn nộp bài để tránh nộp muộn</li>
+                            <li>Chuẩn bị trước cho khóa Python sắp bắt đầu</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thông báo -->
+    <div class="alert alert-info" role="alert">
+        <strong>💡 Lưu ý:</strong> Đây là giao diện mẫu. Dữ liệu thực sẽ được tính toán và hiển thị khi kết nối Backend.
+    </div>   
+</div>
+
+@section Scripts {
+    <script>
+        function exportReport() {
+            // Gọi API export
+            window.location.href = '/api/student/reports/export?format=pdf';
+        }
+    </script>
+}
