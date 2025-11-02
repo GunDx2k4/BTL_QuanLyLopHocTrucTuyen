@@ -3,13 +3,13 @@
     ViewData["Title"] = "Đăng ký Tenant mới";
 
     var planOptions = Enum.GetValues(typeof(PlanType))
-        .Cast<PlanType>()
-        .Select(pt => new
-        {
-            Value = (int)pt,
-            Text = pt.ToString()
-        })
-        .ToList();
+    .Cast<PlanType>()
+    .Select(pt => new
+    {
+        Value = (int)pt,
+        Text = pt.ToString()
+    })
+    .ToList();
 }
 
 <div class="container py-5">
@@ -26,7 +26,8 @@
                     <form id="tenantForm" onsubmit="registerTenant(event)">
                         <div class="mb-3">
                             <label for="TenantName" class="form-label fw-bold">Tên tổ chức</label>
-                            <input id="TenantName" name="TenantName" class="form-control" placeholder="Nhập tên tổ chức..." required />
+                            <input id="TenantName" name="TenantName" class="form-control"
+                                placeholder="Nhập tên tổ chức..." required />
                         </div>
 
                         <div class="mb-3">
@@ -37,6 +38,12 @@
                                     <option value="@plan.Value">@plan.Text</option>
                                 }
                             </select>
+                        </div>
+                        <div class="mb-3" id="monthContainer" style="display:none;">
+                            <label class="form-label fw-bold">Số tháng thuê</label>
+                            <input type="number" class="form-control" id="monthCount" name="monthCount" min="1"
+                                placeholder="Nhập số tháng">
+                            <div id="expireInfo" class="form-text text-success mt-2">Hết hạn vào: </div>
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
@@ -51,44 +58,97 @@
     </div>
 </div>
 
-<script>
-    const registerTenant = async (event) => {
-        event.preventDefault();
+@section Scripts {
 
-        const data = {
-            Name: $("#TenantName").val().trim(),
-            Plan: $("#Plan").val()
-        };
-
-        // Ẩn message cũ
-        $("#resultMessage").html("");
-
-        try {
-            const res = await fetch('/api/tenants/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-            if (res.ok) {
-                showModal("Đăng ký thành công!", "/" );
+    <script>
+        $("#Plan").on("change", function () {
+            const value = parseInt($(this).val());
+            if (value >= 1) { // Basic hoặc Premium
+                $("#monthContainer").show();
+                $("#expireInfo").show();
             } else {
-                const result = await res.json();
+                $("#monthContainer").hide();
+                $("#expireInfo").hide();
+            }
+        });
+
+        $(document).ready(function () {
+            $("#monthCount").val(1).trigger("input");
+        });
+
+        let expire = null;
+
+        $("#monthCount").on("input", function () {
+            const months = parseInt($(this).val());
+            const baseDate = new Date();
+            if (!isNaN(months) && months > 0) {
+
+                expire = new Date(baseDate);
+                expire.setMonth(baseDate.getMonth() + months);
+
+                const date = expire.toLocaleDateString("vi-VN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric"
+                });
+
+                $("#expireInfo")
+                    .text(`Hết hạn vào: ${date}`)
+                    .show();
+            } else {
+                const date = baseDate.toLocaleDateString("vi-VN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric"
+                });
+                $("#expireInfo")
+                    .text(`Hết hạn vào: ${date}`)
+                    .show();
+            }
+        });
+
+        const registerTenant = async (event) => {
+            event.preventDefault();
+
+            const data = {
+                Name: $("#TenantName").val().trim(),
+                Plan: $("#Plan").val(),
+            };
+
+            if (expire != null) {
+                data.EndTime = expire;
+            }
+
+            // Ẩn message cũ
+            $("#resultMessage").html("");
+
+            try {
+                const res = await fetch('/api/tenants/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    showModal("Đăng ký thành công!", "/");
+                } else {
+                    const result = await res.json();
+                    $("#resultMessage").html(`
+                        <div class="alert alert-danger d-flex align-items-center" role="alert">
+                            <i class="bi bi-x-circle-fill me-2"></i>
+                            ${result.message ?? "Đăng ký thất bại!"}
+                        </div>
+                    `);
+                }
+            } catch (error) {
                 $("#resultMessage").html(`
                     <div class="alert alert-danger d-flex align-items-center" role="alert">
-                        <i class="bi bi-x-circle-fill me-2"></i>
-                        ${result.message ?? "Đăng ký thất bại!"}
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Lỗi: ${error.message ?? "Đã xảy ra lỗi!"}
                     </div>
                 `);
             }
-        } catch (error) {
-            $("#resultMessage").html(`
-                <div class="alert alert-danger d-flex align-items-center" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    Lỗi: ${error.message ?? "Đã xảy ra lỗi!"}
-                </div>
-            `);
-        }
-    };
-</script>
+        };
+    </script>
+}
