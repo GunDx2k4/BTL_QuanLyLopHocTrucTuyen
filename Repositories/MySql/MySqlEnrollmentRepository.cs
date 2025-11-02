@@ -164,7 +164,7 @@ public class MySqlEnrollmentRepository(MySqlDbContext context) : IEnrollmentRepo
     public async Task<Enrollment?> GetEnrollmentByUserAndCourseAsync(Guid userId, Guid courseId)
     {
         return await context.Enrollments
-            .Include(e => e.Course)
+            .Include(e => e.Course).ThenInclude(c => c.Instructor)
             .FirstOrDefaultAsync(e => e.UserId == userId && e.CourseId == courseId);
     }
 

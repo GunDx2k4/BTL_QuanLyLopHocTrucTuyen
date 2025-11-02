@@ -6,12 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="Views\Admin\**" />
-    <Content Remove="Views\Admin\**" />
-    <EmbeddedResource Remove="Views\Admin\**" />
-    <None Remove="Views\Admin\**" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
@@ -24,10 +18,5 @@
     <PackageReference Include="Supabase" Version="1.1.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Controllers/Instructor/" />
-    <Folder Include="Migrations\" />
-    <Folder Include="Views/Instructor/HomeInstructor/" />
-  </ItemGroup>
 
 </Project>
