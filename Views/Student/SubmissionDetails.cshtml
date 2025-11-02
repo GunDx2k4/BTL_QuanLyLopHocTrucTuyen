@@ -1,8 +1,6 @@
 ﻿@*
     For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 *@
-@{
-}
 @model BTL_QuanLyLopHocTrucTuyen.Models.Submission
 
 @{
@@ -11,6 +9,7 @@
     var assignment = submission?.Assignment;
     var course = assignment?.Lesson?.Course;
     var instructor = course?.Instructor;
+    Layout = "~/Views/Shared/_StudentLayout.cshtml";
 }
 
 <div class="container mt-4">

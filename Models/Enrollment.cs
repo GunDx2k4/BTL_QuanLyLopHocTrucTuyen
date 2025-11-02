@@ -23,4 +23,9 @@ public class Enrollment : Entity
     public DateTime EnrolledAt { get; set; } = DateTime.UtcNow;
 
     public EnrollmentStatus Status { get; set; } = EnrollmentStatus.Enrolled;
+    public double Progress { get; set; } = 0;  
+    public double? FinalGrade { get; set; }
+    public DateTime? DroppedAt { get; set; }
 }
+
+
