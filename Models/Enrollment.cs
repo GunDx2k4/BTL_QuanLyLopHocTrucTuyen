@@ -11,13 +11,12 @@ public class Enrollment : Entity
 {
     [Required]
     [ForeignKey("User")]
-    public Guid UserId { get; set; }
-    [JsonIgnore]
+    public required Guid UserId { get; set; }
     public User? User { get; set; }
 
     [Required]
     [ForeignKey("Course")]
-    public Guid CourseId { get; set; }
+    public required Guid CourseId { get; set; }
     [JsonIgnore]
     public Course? Course { get; set; }
 

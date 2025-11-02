@@ -10,7 +10,7 @@ public class MySqlEnrollmentRepository(MySqlDbContext context) : IEnrollmentRepo
     protected readonly DbSet<Enrollment> _dbSet = context.Enrollments;
     protected readonly IQueryable<Enrollment> _queryable = context.Enrollments
         .Include(e => e.User)
-        .Include(e => e.Course);
+        .Include(e => e.Course).ThenInclude(c => c.Instructor);
 
     public async Task<Enrollment?> AddAsync(Enrollment entity)
     {

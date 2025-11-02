@@ -40,7 +40,6 @@ public class Course : Entity
     public required Guid InstructorId { get; set; }
     public User? Instructor { get; set; }
 
-    [JsonIgnore]
     public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
     [JsonIgnore]
     public ICollection<Lesson> Lessons { get; set; } = new List<Lesson>();

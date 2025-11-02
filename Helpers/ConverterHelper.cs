@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
+using BTL_QuanLyLopHocTrucTuyen.Models.Enums;
 
 namespace BTL_QuanLyLopHocTrucTuyen.Helpers;
 
@@ -45,5 +46,15 @@ public static class ConverterHelper
         }
     }
 
+    public static string ToEnrollmentStatusString(this EnrollmentStatus status)
+    {
+        return status switch
+        {
+                EnrollmentStatus.Enrolled => "Đã đăng ký",
+                EnrollmentStatus.Completed => "Đã hoàn thành",
+                EnrollmentStatus.Dropped => "Đã rút khỏi khóa học",
+                _ => status.ToString()
+        };
+    }
 
 }

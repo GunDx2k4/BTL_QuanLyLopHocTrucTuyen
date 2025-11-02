@@ -94,7 +94,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
             var isAdmin = permissions.Value.HasPermission(UserPermission.ManageAllUsers);
             var isManager = permissions.Value.HasPermission(UserPermission.EditUsers) && await userRepository.IsSameTenantAsync(userId, entity.Id);
 
-            if (!isAdmin || !isManager) return Forbid();
+            if (!isAdmin && !isManager) return Forbid();
 
             var existingUser = await userRepository.FindByEmailAsync(entity.Email);
 
@@ -171,6 +171,26 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
             }
 
             var result2 = (await userRepository.FindAsync()).Where(u => u.Role != null && u.Role.Permissions.HasPermission(UserPermission.InstructorUser));
+            return Ok(result2);
+        }
+
+        [HttpGet("students")]
+        [UserPermissionAuthorize(UserPermission.ViewUsers | UserPermission.ManageAllUsers)]
+        public async Task<IActionResult> GetStudentsAsync()
+        {
+            var userId = User.GetUserId();
+
+            if (userId == Guid.Empty)
+                return Forbid();
+
+            var user = await userRepository.FindByIdAsync(userId);
+            if (user != null && user.Role != null && user.Role.Permissions.HasPermission(UserPermission.ViewUsers))
+            {
+                var result = (await userRepository.FindAsync()).Where(u => u.TenantId == user.TenantId && u.Role != null && u.Role.Permissions.HasPermission(UserPermission.StudentUser));
+                return Ok(result);
+            }
+
+            var result2 = (await userRepository.FindAsync()).Where(u => u.Role != null && u.Role.Permissions.HasPermission(UserPermission.StudentUser));
             return Ok(result2);
         }
 
