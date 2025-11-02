@@ -35,13 +35,21 @@ public class SqlServerSubmissionRepository(SqlServerDbContext context) : ISubmis
 
     public async Task<int> UpdateAsync(Submission entity)
     {
-        _dbSet.Update(entity);
+        var existing = await _dbSet.FindAsync(entity.Id);
+        if (existing == null) return 0;
+
+        context.Entry(existing).CurrentValues.SetValues(entity);
+        _dbSet.Update(existing);
         var updated = await context.SaveChangesAsync();
 
-        await context.Entry(entity).Reference(s => s.Assignment).LoadAsync();
-        await context.Entry(entity).Reference(s => s.Student).LoadAsync();
+        await context.Entry(existing).Reference(s => s.Assignment).LoadAsync();
+        await context.Entry(existing).Reference(s => s.Student).LoadAsync();
 
         return updated;
+    }
+    public async Task<int> UpdateAsync(Submission entity, Submission newEntity)
+    {
+        return await UpdateAsync(newEntity);
     }
 
     public async Task<int> DeleteAllAsync()

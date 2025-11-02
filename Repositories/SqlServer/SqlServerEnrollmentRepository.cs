@@ -44,6 +44,11 @@ public class SqlServerEnrollmentRepository(SqlServerDbContext context) : IEnroll
         return updated;
     }
 
+    public async Task<int> UpdateAsync(Enrollment entity, Enrollment newEntity)
+    {
+        return await UpdateAsync(newEntity);
+    }
+
     public async Task<int> DeleteAllAsync()
     {
         var entities = await _dbSet.ToListAsync();

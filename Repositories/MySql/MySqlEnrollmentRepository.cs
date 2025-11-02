@@ -35,11 +35,15 @@ public class MySqlEnrollmentRepository(MySqlDbContext context) : IEnrollmentRepo
 
     public async Task<int> UpdateAsync(Enrollment entity)
     {
-        _dbSet.Update(entity);
+        var existing = await _dbSet.FindAsync(entity.Id);
+        if (existing == null) return 0;
+
+        context.Entry(existing).CurrentValues.SetValues(entity);
+        _dbSet.Update(existing);
         var updated = await context.SaveChangesAsync();
 
-        await context.Entry(entity).Reference(e => e.User).LoadAsync();
-        await context.Entry(entity).Reference(e => e.Course).LoadAsync();
+        await context.Entry(existing).Reference(e => e.User).LoadAsync();
+        await context.Entry(existing).Reference(e => e.Course).LoadAsync();
 
         return updated;
     }

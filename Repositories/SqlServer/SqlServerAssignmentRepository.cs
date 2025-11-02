@@ -35,11 +35,15 @@ public class SqlServerAssignmentRepository(SqlServerDbContext context) : IAssign
 
     public async Task<int> UpdateAsync(Assignment entity)
     {
-        _dbSet.Update(entity);
+        var existing = await _dbSet.FindAsync(entity.Id);
+        if (existing == null) return 0;
+
+        context.Entry(existing).CurrentValues.SetValues(entity);
+        _dbSet.Update(existing);
         var updated = await context.SaveChangesAsync();
 
-        await context.Entry(entity).Reference(a => a.Lesson).LoadAsync();
-        await context.Entry(entity).Collection(a => a.Submissions).LoadAsync();
+        await context.Entry(existing).Reference(a => a.Lesson).LoadAsync();
+        await context.Entry(existing).Collection(a => a.Submissions).LoadAsync();
 
         return updated;
     }
