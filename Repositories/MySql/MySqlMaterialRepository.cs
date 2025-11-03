@@ -35,11 +35,15 @@ public class MySqlMaterialRepository(MySqlDbContext context) : IMaterialReposito
 
     public async Task<int> UpdateAsync(Material entity)
     {
-        _dbSet.Update(entity);
+        var existing = await _dbSet.FindAsync(entity.Id);
+        if (existing == null) return 0;
+
+        context.Entry(existing).CurrentValues.SetValues(entity);
+        _dbSet.Update(existing);
         var updated = await context.SaveChangesAsync();
 
-        await context.Entry(entity).Reference(m => m.Lesson).LoadAsync();
-        await context.Entry(entity).Reference(m => m.Uploader).LoadAsync();
+        await context.Entry(existing).Reference(m => m.Lesson).LoadAsync();
+        await context.Entry(existing).Reference(m => m.Uploader).LoadAsync();
 
         return updated;
     }

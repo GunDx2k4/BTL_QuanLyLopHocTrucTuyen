@@ -61,5 +61,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Models
         // ===== 🌍 TRẠNG THÁI CÔNG KHAI =====
         [Display(Name = "Công khai cho sinh viên")]
         public bool IsPublic { get; set; } = false;
+        public string FileUrl { get; set; }
+
     }
 }

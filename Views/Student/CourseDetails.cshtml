@@ -1,0 +1,288 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "~/Views/Shared/_StudentLayout.cshtml";
+}
+
+@model BTL_QuanLyLopHocTrucTuyen.Models.Enrollment
+
+@{
+    ViewData["Title"] = "Chi tiết khóa học";
+    var enrollment = ViewBag.Enrollment as BTL_QuanLyLopHocTrucTuyen.Models.Enrollment;
+    var assignments = ViewBag.Assignments as List<BTL_QuanLyLopHocTrucTuyen.Models.Assignment>;
+    var submissions = ViewBag.Submissions as List<BTL_QuanLyLopHocTrucTuyen.Models.Submission>;
+    var course = enrollment?.Course;
+}
+
+<div class="container mt-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="@Url.Action("Index", "Student")">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="@Url.Action("MyCourses", "Student")">Khóa học của tôi</a></li>
+            <li class="breadcrumb-item active">Chi tiết khóa học</li>
+        </ol>
+    </nav>
+
+    <!-- Course Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-2">📖 @course?.Name</h2>
+            <p class="text-muted">
+                <span class="badge bg-primary me-2">
+                    @(enrollment?.Status == BTL_QuanLyLopHocTrucTuyen.Models.Enums.EnrollmentStatus.Enrolled ? "Đang học" : "Đã hoàn thành")
+                </span>
+                <span>👨‍🏫 Giảng viên: <strong>@(course?.Instructor?.FullName ?? "Chưa có")</strong></span>
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#dropCourseModal">
+                ❌ Hủy đăng ký
+            </button>
+        </div>
+    </div>
+
+    <!-- Course Info Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="text-muted">📅 Bắt đầu</h6>
+                    <h5>@course?.BeginTime.ToString("dd/MM/yyyy")</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="text-muted">⏱️ Kết thúc</h6>
+                    <h5>@course?.EndTime.ToString("dd/MM/yyyy")</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="text-muted">📊 Tiến độ</h6>
+                    <h5>@(enrollment?.Progress ?? 0)%</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="text-muted">🎯 Điểm TB</h6>
+                    <h5>@(enrollment?.FinalGrade?.ToString("0.0") ?? "--")</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5>Tiến độ học tập</h5>
+            <div class="progress" style="height: 25px;">
+                <div class="progress-bar" role="progressbar" style="width: @(enrollment?.Progress ?? 0)%">
+                    @(enrollment?.Progress ?? 0)% hoàn thành
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" id="courseDetailTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="description-tab" data-bs-toggle="tab"
+                    data-bs-target="#description" type="button" role="tab">
+                📝 Mô tả
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="lessons-tab" data-bs-toggle="tab"
+                    data-bs-target="#lessons" type="button" role="tab">
+                📚 Bài học (@(course?.Lessons?.Count ?? 0))
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="materials-tab" data-bs-toggle="tab"
+                    data-bs-target="#materials" type="button" role="tab">
+                📎 Tài liệu
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="assignments-tab" data-bs-toggle="tab"
+                    data-bs-target="#assignments" type="button" role="tab">
+                📝 Bài tập (@(assignments?.Count ?? 0))
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="courseDetailTabsContent">
+
+        <!-- Mô tả -->
+        <div class="tab-pane fade show active" id="description" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Giới thiệu khóa học</h5>
+                    <p class="card-text">@(course?.Description ?? "Không có mô tả")</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bài học -->
+        <div class="tab-pane fade" id="lessons" role="tabpanel">
+            @if (course?.Lessons != null && course.Lessons.Any())
+            {
+                <div class="accordion" id="lessonsAccordion">
+                    @foreach (var lesson in course.Lessons.OrderBy(l => l.BeginTime))
+                    {
+                        var isCompleted = lesson.Status == BTL_QuanLyLopHocTrucTuyen.Models.Enums.ScheduleStatus.Completed;
+                        var isActive = lesson.Status == BTL_QuanLyLopHocTrucTuyen.Models.Enums.ScheduleStatus.Active;
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button"
+                                        data-bs-toggle="collapse" data-bs-target="#lesson@(lesson.Id)">
+                                    @if (isCompleted)
+                                    {
+                                        <span class="badge bg-success me-2">✓</span>
+                                    }
+                                    else if (isActive)
+                                    {
+                                        <span class="badge bg-primary me-2">⏳</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary me-2">🔒</span>
+                                    }
+                                    @lesson.Title
+                                </button>
+                            </h2>
+                            <div id="lesson@(lesson.Id)" class="accordion-collapse collapse"
+                                 data-bs-parent="#lessonsAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>Thời gian:</strong> @lesson.BeginTime.ToString("dd/MM/yyyy") - @lesson.EndTime.ToString("dd/MM/yyyy")</p>
+                                    <p><strong>Nội dung:</strong> @(lesson.Content ?? "Không có nội dung")</p>
+                                    @if (!string.IsNullOrEmpty(lesson.VideoUrl))
+                                    {
+                                        <p><strong>📹 Video:</strong> <a href="@lesson.VideoUrl" target="_blank">Xem video</a></p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">Chưa có bài học nào</div>
+            }
+        </div>
+
+        <!-- Tài liệu -->
+        <div class="tab-pane fade" id="materials" role="tabpanel">
+            @if (course?.Lessons?.Any(l => l.Materials?.Any() == true) == true)
+            {
+                <div class="list-group">
+                    @foreach (var lesson in course.Lessons.Where(l => l.Materials?.Any() == true))
+                    {
+                        @foreach (var material in lesson.Materials)
+                        {
+                            <a href="@material.FileUrl" class="list-group-item list-group-item-action" target="_blank">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">📄 @material.Title</h5>
+                                    <small>@material.UploadedAt.ToString("dd/MM/yyyy")</small>
+                                </div>
+                                <p class="mb-1">@material.Description</p>
+                            </a>
+                        }
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">Chưa có tài liệu nào</div>
+            }
+        </div>
+
+        <!-- Bài tập -->
+        <div class="tab-pane fade" id="assignments" role="tabpanel">
+            @if (assignments != null && assignments.Any())
+            {
+                <div class="list-group">
+                    @foreach (var assignment in assignments)
+                    {
+                        var submission = submissions?.FirstOrDefault(s => s.AssignmentId == assignment.Id);
+                        var hasSubmitted = submission != null;
+
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-1">📝 @assignment.Title</h5>
+                                    <p class="mb-1">@assignment.Description</p>
+                                    <small class="@(assignment.DueDate < DateTime.UtcNow ? "text-danger" : "text-muted")">
+                                        ⏰ Hạn nộp: @assignment.DueDate.ToString("dd/MM/yyyy HH:mm")
+                                    </small>
+                                </div>
+                                <div>
+                                    @if (hasSubmitted)
+                                    {
+                                        @if (submission.Grade.HasValue)
+                                        {
+                                            <span class="badge bg-success">Đã chấm - Điểm: @submission.Grade.Value.ToString("0.0")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning">Đã nộp - Chờ chấm</span>
+                                        }
+                                        <a href="@Url.Action("SubmissionDetails", "Student", new { id = submission.Id })"
+                                           class="btn btn-sm btn-success mt-2">Xem bài nộp</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Chưa nộp</span>
+                                        <a href="@Url.Action("SubmitAssignment", "Student", new { id = assignment.Id })"
+                                           class="btn btn-sm btn-warning mt-2">📤 Nộp bài</a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">Chưa có bài tập nào</div>
+            }
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal Drop Course -->
+<div class="modal fade" id="dropCourseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">❌ Xác nhận hủy đăng ký</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Cảnh báo:</strong> Bạn có chắc chắn muốn hủy đăng ký khóa học này?</p>
+                <p class="text-danger mb-0">
+                    <small>⚠️ Sau khi hủy, bạn sẽ mất quyền truy cập vào tài liệu và bài tập.</small>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Không</button>
+                <form asp-action="DropCourse" asp-controller="Student" method="post" style="display:inline;">
+                    <input type="hidden" name="enrollmentId" value="@enrollment?.Id" />
+                    <button type="submit" class="btn btn-danger">Có, hủy đăng ký</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

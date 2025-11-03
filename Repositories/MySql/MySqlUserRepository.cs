@@ -40,12 +40,15 @@ public class MySqlUserRepository(MySqlDbContext context) : IUserRepository
 
     public async Task<int> UpdateAsync(User entity)
     {
-        _dbSet.Update(entity);
+        var existing = await _dbSet.FindAsync(entity.Id);
+        if (existing == null) return 0;
+
+        context.Entry(existing).CurrentValues.SetValues(entity);
+        _dbSet.Update(existing);
         var updated = await context.SaveChangesAsync();
 
-        await context.Entry(entity).Reference(u => u.Role).LoadAsync();
-        await context.Entry(entity).Reference(u => u.Tenant).LoadAsync();
-        
+        await context.Entry(existing).Reference(u => u.Role).LoadAsync();
+        await context.Entry(existing).Reference(u => u.Tenant).LoadAsync();
         return updated;
     }
 

@@ -49,8 +49,17 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.Manager
             return View();
         }
 
-        public IActionResult CourseManager()
+        public async Task<IActionResult> CourseManager()
         {
+            var userId = User.GetUserId();
+            var tenant = await tenantRepository.FindTenantByOwnerIdAsync(userId);
+            if (tenant == null)
+            {
+                memoryCache.Remove(userId);
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return View("Index", "Home");
+            }
+            ViewBag.TenantId = tenant.Id;
             return View();
         }
 

@@ -49,10 +49,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Core.Controllers
                 return NotFound();
             }
 
-            // Update the entity properties
-            existingEntity = entity;
-
-            var updatedEntity = await repository.UpdateAsync(existingEntity);
+            var updatedEntity = await repository.UpdateAsync(entity);
             return Ok(new { success = true, updated = updatedEntity });
         }
 

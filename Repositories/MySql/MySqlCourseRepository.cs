@@ -12,7 +12,7 @@ public class MySqlCourseRepository(MySqlDbContext context) : ICourseRepository
         .Include(c => c.Instructor)
         .Include(c => c.Tenant)
         .Include(c => c.Lessons)
-        .Include(c => c.Enrollments);
+        .Include(c => c.Enrollments).ThenInclude(e => e.User).ThenInclude(u => u!.Role);
 
     public async Task<Course?> AddAsync(Course entity)
     {
@@ -41,14 +41,23 @@ public class MySqlCourseRepository(MySqlDbContext context) : ICourseRepository
 
     public async Task<int> UpdateAsync(Course entity)
     {
-        _dbSet.Update(entity);
+        var existingEntity = await _dbSet.FindAsync(entity.Id);
+        if (existingEntity == null)
+        {
+            return 0;
+        }
+
+        context.Entry(existingEntity).CurrentValues.SetValues(entity);
+        
+        _dbSet.Update(existingEntity);
+
         var updated = await context.SaveChangesAsync();
 
-        await context.Entry(entity).Reference(c => c.Instructor).LoadAsync();
-        await context.Entry(entity).Reference(c => c.Tenant).LoadAsync();
-        await context.Entry(entity).Collection(c => c.Lessons).LoadAsync();
-        await context.Entry(entity).Collection(c => c.Enrollments).LoadAsync();
-        
+        await context.Entry(existingEntity).Reference(c => c.Instructor).LoadAsync();
+        await context.Entry(existingEntity).Reference(c => c.Tenant).LoadAsync();
+        await context.Entry(existingEntity).Collection(c => c.Lessons).LoadAsync();
+        await context.Entry(existingEntity).Collection(c => c.Enrollments).LoadAsync();
+
         return updated;
     }
 

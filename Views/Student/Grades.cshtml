@@ -1,0 +1,189 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    Layout = "~/Views/Shared/_StudentLayout.cshtml";
+}
+
+@model List<BTL_QuanLyLopHocTrucTuyen.Models.Submission>
+
+@{
+    ViewData["Title"] = "Điểm số";
+    var enrollments = ViewBag.Enrollments as List<BTL_QuanLyLopHocTrucTuyen.Models.Enrollment>;
+}
+<div class="container mt-4">
+    <!-- Tiêu đề trang -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-2">🎯 Điểm số và kết quả học tập</h2>
+            <p class="text-muted">Xem điểm số chi tiết từ các khóa học đã tham gia</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-primary" onclick="window.print()">
+                🖨️ In bảng điểm
+            </button>
+        </div>
+    </div>
+
+    <!-- Thống kê tổng quan -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <h3 class="text-primary mb-0">@ViewBag.AverageGrade</h3>
+                    <small class="text-muted">Điểm trung bình</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h3 class="text-success mb-0">@ViewBag.GradedCount</h3>
+                    <small class="text-muted">Bài đã chấm</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <h3 class="text-warning mb-0">@ViewBag.MaxGrade</h3>
+                    <small class="text-muted">Điểm cao nhất</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-danger">
+                <div class="card-body">
+                    <h3 class="text-danger mb-0">@ViewBag.MinGrade</h3>
+                    <small class="text-muted">Điểm thấp nhất</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bộ lọc -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <select class="form-select">
+                <option selected>📚 Tất cả khóa học</option>
+                <option>Lập trình Web</option>
+                <option>Cơ sở dữ liệu</option>
+                <option>Lập trình Python</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <select class="form-select">
+                <option selected>📅 Tất cả học kỳ</option>
+                <option>Học kỳ 1 - 2025</option>
+                <option>Học kỳ 2 - 2025</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Tab Theo khóa học -->
+    <div class="tab-pane fade show active" id="bycourse" role="tabpanel">
+        @if (enrollments != null && enrollments.Any())
+        {
+            @foreach (var enrollment in enrollments.Where(e => e.Status ==
+                    BTL_QuanLyLopHocTrucTuyen.Models.Enums.EnrollmentStatus.Enrolled))
+            {
+                var courseSubmissions = Model?.Where(s => s.Assignment?.Lesson?.CourseId == enrollment.CourseId).ToList() ?? new
+                List<BTL_QuanLyLopHocTrucTuyen.Models.Submission>();
+                var gradedSubmissions = courseSubmissions.Where(s => s.Grade.HasValue).ToList();
+                var avgGrade = gradedSubmissions.Any() ? gradedSubmissions.Average(s => s.Grade!.Value) : 0;
+
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">📖 @enrollment.Course?.Name</h5>
+                            <span class="badge bg-light text-primary fs-6">
+                                Điểm TB: @avgGrade.ToString("0.0")/10
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-3">
+                            <strong>👨‍🏫 Giảng viên:</strong> @(enrollment.Course?.Instructor?.FullName ?? "N/A") |
+                            <strong>📊 Trạng thái:</strong> <span class="badge bg-success">Đang học</span>
+                        </p>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 5%">#</th>
+                                        <th style="width: 40%">Tên bài tập</th>
+                                        <th style="width: 15%">Ngày nộp</th>
+                                        <th style="width: 15%">Hạn nộp</th>
+                                        <th style="width: 12%">Trạng thái</th>
+                                        <th style="width: 13%">Điểm</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (courseSubmissions.Any())
+                                    {
+                                        int index = 1;
+                                        @foreach (var submission in courseSubmissions.OrderBy(s => s.Assignment?.DueDate))
+                                        {
+                                            var isGraded = submission.Grade.HasValue;
+                                            <tr>
+                                                <td>@index</td>
+                                                <td>@submission.Assignment?.Title</td>
+                                                <td>@submission.SubmittedAt.ToString("dd/MM/yyyy")</td>
+                                                <td>@submission.Assignment?.DueDate.ToString("dd/MM/yyyy")</td>
+                                                <td>
+                                                    @if (isGraded)
+                                                    {
+                                                        <span class="badge bg-success">Đã chấm</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-warning">Chờ chấm</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (isGraded)
+                                                    {
+                                                        <strong class="text-success">@submission.Grade?.ToString("0.0")/10</strong>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">--</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                            index++;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted">Chưa có bài nộp nào</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                @if (gradedSubmissions.Any())
+                                {
+                                    <tfoot class="table-light">
+                                        <tr>
+                                            <th colspan="5" class="text-end">Điểm trung bình:</th>
+                                            <th><strong class="text-primary fs-5">@avgGrade.ToString("0.0")/10</strong></th>
+                                        </tr>
+                                    </tfoot>
+                                }
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <strong>📚 Chưa có khóa học nào!</strong>
+                <p class="mb-0">Bạn chưa đăng ký khóa học nào. <a href="@Url.Action("AvailableCourses", "Student")">Đăng ký
+                        ngay</a>!</p>
+            </div>
+        }
+    </div>
+</div>

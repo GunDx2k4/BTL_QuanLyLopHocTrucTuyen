@@ -6,86 +6,245 @@
     <div class="d-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0">Quản lý Khóa Học</h1>
         <div>
-            <a class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCourse">➕ Thêm Khoá Học</a>
+            <a class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCourse">Thêm Khoá Học</a>
         </div>
     </div>
 
     <div class="card border-0 shadow-sm bg-white">
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover" id="coursesTable">
-                    <thead>
-                        <tr>
-                            <th>Tên</th>
-                            <th>Giảng viên</th>
-                            <th>Bắt đầu</th>
-                            <th>Kết thúc</th>
-                            <th>Đăng ký</th>
-                            <th>Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- rows sẽ được render bởi JS -->
-                    </tbody>
-                </table>
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="input-group w-50">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input id="courseSearch" type="search" class="form-control" placeholder="Tìm kiếm khoá học..." />
+                </div>
+                <div class="text-muted small">Tổng: <span id="courseCount">0</span></div>
+            </div>
+
+            <div class="listcourses">
+                <!-- course cards sẽ được render bởi JS -->
             </div>
         </div>
     </div>
 </div>
 
 @await Html.PartialAsync("_ModalCourse")
-@await Html.PartialAsync("_ModalStudent")
+@await Html.PartialAsync("_ModalCourseDetails")
 
 @section Scripts {
     <script>
         let courses = [];
         let editingCourseId = null;
         let enrollingCourseId = null;
+        
+        window.tenantId = '@(ViewBag.TenantId ?? String.Empty)';
 
         async function loadCourses() {
-            const tBody = $('#coursesTable tbody');
-            tBody.html('<tr><td colspan="6" class="text-center text-muted">Đang tải...</td></tr>');
+            const container = $('.listcourses');
+            container.html('<div class="text-center text-muted py-4">Đang tải...</div>');
             try {
                 const res = await fetch('/api/courses');
                 if (!res.ok) throw new Error('Không thể tải danh sách khóa học');
                 courses = await res.json();
+                $('#courseCount').text(courses.length || 0);
                 renderCourses();
             } catch (err) {
-                tBody.html('<tr><td colspan="6" class="text-danger text-center">Lỗi khi tải dữ liệu</td></tr>');
+                container.html('<div class="text-danger text-center">Lỗi khi tải dữ liệu</div>');
                 console.error(err);
             }
         }
 
         function renderCourses() {
-            const tBody = $('#coursesTable tbody');
+            const container = $('.listcourses');
             if (!courses || courses.length === 0) {
-                tBody.html('<tr><td colspan="6" class="text-center">Không có khóa học</td></tr>');
+                container.html('<div class="text-center text-muted py-4">Không có khóa học</div>');
+                $('#courseCount').text(0);
                 return;
             }
 
-            const rows = courses.map(c => {
+            const q = ($('#courseSearch').val() || '').toLowerCase();
+            const filtered = courses.filter(c => {
+                if (!q) return true;
+                const name = (c.name || '').toLowerCase();
+                const instructor = ((c.instructor && c.instructor.fullName) || '').toLowerCase();
+                return name.includes(q) || instructor.includes(q);
+            });
+
+            $('#courseCount').text(filtered.length);
+
+            const cards = filtered.map(c => {
                 const begin = c.beginTime ? new Date(c.beginTime).toLocaleDateString('vi-VN') : '-';
                 const end = c.endTime ? new Date(c.endTime).toLocaleDateString('vi-VN') : '-';
                 const instructor = (c.instructor && c.instructor.fullName) ? `${c.instructor.fullName}` : 'Chưa có';
                 const enrolledCount = (c.enrollments ? c.enrollments.length : 0);
                 return `
-                    <tr data-id="${c.id}">
-                        <td>${escapeHtml(c.name)}</td>
-                        <td>${escapeHtml(instructor)}</td>
-                        <td>${begin}</td>
-                        <td>${end}</td>
-                        <td>${enrolledCount}</td>
-                        <td>
-                            <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-success" onclick="onEnroll('${c.id}')">➕ Thêm SV</button>
-                                <button class="btn btn-sm btn-outline-primary" onclick="onEdit('${c.id}')">✏️ Sửa</button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="onDelete('${c.id}')">🗑️ Xóa</button>
+                    <div class="card mb-3">
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                            <div>
+                                <h5 class="card-title mb-1">${escapeHtml(c.name)}</h5>
+                                <p class="mb-1 text-muted small">${escapeHtml(instructor)} • ${begin} - ${end}</p>
+                                <p class="mb-0 text-muted small">Đăng ký: ${enrolledCount}</p>
                             </div>
-                        </td>
-                    </tr>`;
+                            <div class="btn-group">
+                                <button class="btn btn-primary btn-sm me-1" onclick="onView('${c.id}')">Xem</button>
+                                <button class="btn btn-warning btn-sm me-1 text-dark" onclick="onEdit('${c.id}')">Sửa</button>
+                                <button class="btn btn-danger btn-sm" onclick="onDelete('${c.id}')">Xóa</button>
+                            </div>
+                        </div>
+                    </div>`;
             }).join('');
-            tBody.html(rows);
+
+            container.html(cards);
         }
+
+        // Open details modal for a course
+        async function onView(id) {
+            try {
+                const res = await fetch(`/api/courses/${id}`);
+                if (!res.ok) throw new Error('Không thể tải chi tiết khóa học');
+                const course = await res.json();
+
+                $('#detailsCourseName').text(course.name || '');
+                $('#detailsCourseInstructor').text((course.instructor && course.instructor.fullName) ? course.instructor.fullName : 'Chưa có');
+                $('#detailsCourseBegin').text(course.beginTime ? new Date(course.beginTime).toLocaleDateString('vi-VN') : '-');
+                $('#detailsCourseEnd').text(course.endTime ? new Date(course.endTime).toLocaleDateString('vi-VN') : '-');
+                $('#detailsCourseDescription').text(course.description || '');
+
+                const tbody = $('#detailsEnrolledBody');
+                const enrollments = course.enrollments || [];
+                if (enrollments.length === 0) {
+                    tbody.html('<tr><td colspan="4" class="text-center text-muted">Chưa có học viên</td></tr>');
+                } else {
+                    const rows = enrollments.map(e => {
+                        const student = e.student || e.user || {};
+                        return `<tr data-enroll-id="${e.id || ''}">
+                                    <td>${escapeHtml(student.fullName || student.name || 'Tên trống')}</td>
+                                    <td>${escapeHtml(student.email || '')}</td>
+                                    <td>${e.enrolledAt ? new Date(e.enrolledAt).toLocaleDateString('vi-VN') : '-'}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="onRemoveEnrollment('${course.id}','${e.id || ''}')">Gỡ</button>
+                                    </td>
+                                </tr>`;
+                    }).join('');
+                    tbody.html(rows);
+                }
+
+                    // load tenant students into select when opening details modal
+                    // load tenant students and exclude already-enrolled users
+                    async function loadTenantStudents(excludeIds = []) {
+                        try {
+                            const res = await fetch('/api/users/students');
+                            if (!res.ok) throw new Error('Không thể tải danh sách người dùng');
+                            const students = await res.json();
+                            const sel = $('#detailsStudentSelect');
+                            sel.empty();
+                            // filter out already enrolled users
+                            const available = (students || []).filter(s => !excludeIds.includes((s.id || '').toString()));
+                            if (!available || available.length === 0) {
+                                sel.append(`<option value="">-- Không còn học viên để thêm --</option>`);
+                                sel.prop('disabled', true);
+                                $('#detailsEnrollBtn').prop('disabled', true);
+                            } else {
+                                sel.append(`<option value="">-- Chọn học viên hiện có trong tenant --</option>`);
+                                available.forEach(s => sel.append(`<option value="${s.id}">${escapeHtml(s.fullName || s.fullName)} (${escapeHtml(s.email || '')})</option>`));
+                                sel.prop('disabled', false);
+                                $('#detailsEnrollBtn').prop('disabled', false);
+                            }
+                        } catch (err) {
+                            console.error('loadTenantStudents error', err);
+                            const sel = $('#detailsStudentSelect');
+                            sel.empty().append(`<option value="">-- Lỗi khi tải người dùng --</option>`).prop('disabled', true);
+                            $('#detailsEnrollBtn').prop('disabled', true);
+                        }
+                    }
+
+                    // enrollment via this modal: enroll selected existing tenant student
+                    $('#detailsEnrollBtn').off('click').on('click', async function () {
+                        const selected = $('#detailsStudentSelect').val();
+                        if (!selected) {
+                            $('#detailsAlert').removeClass('d-none').text('Vui lòng chọn học viên.');
+                            return;
+                        }
+                        try {
+                            const enrollResp = await fetch('/api/courses/enrollments', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ courseId: course.id, userId: selected })
+                            });
+                            if (!enrollResp.ok) {
+                                const txt = await enrollResp.text();
+                                throw new Error(txt || enrollResp.statusText);
+                            }
+
+                            // refresh enrollments list
+                            const updated = await (await fetch(`/api/courses/${course.id}`)).json();
+                            const newEnrolls = updated.enrollments || [];
+                            const newRows = newEnrolls.map(e => {
+                                const student = e.student || e.user || {};
+                                return `<tr data-enroll-id="${e.id || ''}">
+                                            <td>${escapeHtml(student.fullName || student.name || 'Tên trống')}</td>
+                                            <td>${escapeHtml(student.email || '')}</td>
+                                            <td>${e.enrolledAt ? new Date(e.enrolledAt).toLocaleDateString('vi-VN') : '-'}</td>
+                                            <td>
+                                                <button class="btn btn-danger btn-sm" onclick="onRemoveEnrollment('${course.id}','${e.id || ''}')">Gỡ</button>
+                                            </td>
+                                        </tr>`;
+                            }).join('');
+                            $('#detailsEnrolledBody').html(newRows);
+                            $('#detailsStudentSelect').val('');
+                            $('#detailsAlert').addClass('d-none').text('');
+                            showMessage('Thêm học viên vào khóa học thành công');
+                            await loadCourses();
+                        } catch (err) {
+                            $('#detailsAlert').removeClass('d-none').text('Lỗi: ' + err.message);
+                        }
+                    });
+
+                $('#detailsEditBtn').off('click').on('click', () => {
+                    $('#modalCourseDetails').modal('hide');
+                    onEdit(course.id);
+                });
+                $('#detailsDeleteBtn').off('click').on('click', () => {
+                    $('#modalCourseDetails').modal('hide');
+                    onDelete(course.id);
+                });
+
+                // prepare list of enrolled user ids to exclude from the select
+                const enrolledIds = (course.enrollments || []).map(e => (e.student?.id || e.user?.id || e.userId || e.studentId || '').toString()).filter(x => x);
+                await loadTenantStudents(enrolledIds);
+                $('#modalCourseDetails').modal('show');
+            } catch (err) {
+                alert('Lỗi: ' + err.message);
+            }
+        }
+
+        async function onRemoveEnrollment(courseId, enrollmentId) {
+            if (!confirm('Bạn có chắc muốn gỡ học viên khỏi khóa học?')) return;
+            if (!enrollmentId) {
+                alert('Không thể gỡ học viên: enrollment id không hợp lệ.');
+                return;
+            }
+            try {
+                const res = await fetch(`/api/courses/enrollments/${enrollmentId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (!res.ok) {
+                    const txt = await res.text();
+                    throw new Error(txt || res.statusText);
+                }
+                showMessage('Gỡ học viên thành công');
+                await onView(courseId);
+                await loadCourses();
+            } catch (err) {
+                alert('Lỗi: ' + err.message);
+            }
+        }
+
+                // cleanup details modal
+                $('#modalCourseDetails').on('hidden.bs.modal', () => {
+                    $('#detailsAlert').addClass('d-none').text('');
+                    $('#detailsEnrolledBody').html('');
+                });
 
         function escapeHtml(text) {
             if (!text) return '';
@@ -109,7 +268,7 @@
                 $('#modalCourse').off('shown.bs.modal.editprefill');
             });
             // override submit to perform PUT
-            $('#formAddCourse').off('submit.courseEdit').on('submit.courseEdit', async function (e) {
+            $('#formAddCourse').off('submit').on('submit', async function (e) {
                 e.preventDefault();
                 const payload = {
                     id: editingCourseId,
@@ -118,7 +277,7 @@
                     beginTime: $('#beginTime').val(),
                     endTime: $('#endTime').val(),
                     instructorId: $('#instructorId').val(),
-                    tenantId: null
+                    tenantId: tenantId
                 };
                 try {
                     const resp = await fetch('/api/courses', {
@@ -150,49 +309,13 @@
         }
 
         function onEnroll(id) {
+            // Open details modal so manager can enroll an existing tenant student
             enrollingCourseId = id;
-            // override student form to enroll after creating student
-            $('#formAddStudent').off('submit.courseEnroll').on('submit.courseEnroll', async function (e) {
-                e.preventDefault();
-                const payload = {
-                    fullName: $('#studentName').val(),
-                    email: $('#studentEmail').val(),
-                    password: $('#studentPassword').val()
-                };
-                try {
-                    const createResp = await fetch('/api/users/students', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    if (!createResp.ok) throw new Error('Không thể tạo học viên: ' + createResp.statusText);
-                    const created = await createResp.json();
-                    // assume created contains id
-                    const userId = created.id || created.Id || null;
-                    if (!userId) {
-                        // fallback: reload and notify user to enroll manually
-                        $('#modalStudent').modal('hide');
-                        showMessage('Học viên đã được tạo. Vui lòng kiểm tra và đăng ký thủ công nếu cần.');
-                        return;
-                    }
-
-                    // call enroll API - backend expected to support manager enroll: /api/student/enroll with { courseId, userId }
-                    const enrollResp = await fetch('/api/student/enroll', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ courseId: enrollingCourseId, userId: userId })
-                    });
-
-                    if (!enrollResp.ok) throw new Error('Không thể đăng ký học viên vào khóa học');
-                    $('#modalStudent').modal('hide');
-                    showMessage('Thêm học viên vào khóa học thành công');
-                    await loadCourses();
-                } catch (err) {
-                    $('#alert').removeClass('d-none').text('Lỗi: ' + err.message);
-                }
+            onView(id);
+            // focus the student select when modal opens
+            $('#modalCourseDetails').one('shown.bs.modal', () => {
+                $('#detailsStudentSelect').focus();
             });
-            // show modal (modalHandler.js also binds formAddStudent but we unbound above)
-            $('#modalStudent').modal('show');
         }
 
         function showMessage(message, redirect = null) {
@@ -218,18 +341,12 @@
             $('#instructorId').val('');
         });
 
-        $('#modalStudent').on('hidden.bs.modal', () => {
-            enrollingCourseId = null;
-            $('#formAddStudent').off('submit.courseEnroll');
-            $('#alert').addClass('d-none').text('');
-            $('#studentName').val('');
-            $('#studentEmail').val('');
-            $('#studentPassword').val('');
-        });
+        // no modalStudent handling here since creation is not available from this view
 
         // load on ready
         $(document).ready(() => {
             loadCourses();
+            $('#courseSearch').on('input', () => renderCourses());
         });
     </script>
 }

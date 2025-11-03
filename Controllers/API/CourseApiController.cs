@@ -4,13 +4,14 @@ using BTL_QuanLyLopHocTrucTuyen.Core.Controllers;
 using BTL_QuanLyLopHocTrucTuyen.Helpers;
 using BTL_QuanLyLopHocTrucTuyen.Models;
 using BTL_QuanLyLopHocTrucTuyen.Models.Enums;
+using BTL_QuanLyLopHocTrucTuyen.Models.ViewModels;
 using BTL_QuanLyLopHocTrucTuyen.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
 {
     [Route("api/courses")]
-    public class CourseApiController(ICourseRepository courseRepository, IUserRepository userRepository) : CrudApiController<Course>(courseRepository)
+    public class CourseApiController(ICourseRepository courseRepository, IUserRepository userRepository, IEnrollmentRepository enrollmentRepository) : CrudApiController<Course>(courseRepository)
     {
         [UserPermissionAuthorize(UserPermission.CreateCourse | UserPermission.ManageAllTenants | UserPermission.ManageAllUsers)]
         public override async Task<IActionResult> AddAsync([FromBody] Course entity)
@@ -130,7 +131,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
 
             var permissions = await userRepository.GetUserPermissionAsync(userId);
             var isAdmin = permissions.Value.HasPermission(UserPermission.ManageAllTenants) || permissions.Value.HasPermission(UserPermission.ManageAllUsers);
-            var isManager = permissions.Value.HasPermission(UserPermission.ViewCourses) &&  await courseRepository.IsSameTenantAsync(userId, course.Id);
+            var isManager = permissions.Value.HasPermission(UserPermission.ViewCourses) && await courseRepository.IsSameTenantAsync(userId, course.Id);
             if (!isAdmin && !isManager) return Forbid();
 
             return await base.GetByIdAsync(id);
@@ -165,5 +166,76 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
         {
             return await base.DeleteAllAsync();
         }
+
+        [HttpPost("enrollments")]
+        [UserPermissionAuthorize(UserPermission.EnrollStudents | UserPermission.EnrollCourses | UserPermission.ManageAllTenants | UserPermission.ManageAllUsers)]
+        public async Task<IActionResult> EnrollStudentAsync([FromBody] EnrollViewModel request)
+        {
+            if (request == null || request.CourseId == Guid.Empty || request.UserId == Guid.Empty)
+                return BadRequest(new { message = "CourseId and UserId are required." });
+
+            var course = await courseRepository.FindByIdAsync(request.CourseId);
+            if (course == null)
+                return BadRequest(new { message = "Course not found." });
+
+            var user = await userRepository.FindByIdAsync(request.UserId);
+            if (user == null)
+                return BadRequest(new { message = "User not found." });
+
+            // Ensure user belongs to the same tenant as the course
+            if (user.TenantId != course.TenantId)
+                return BadRequest(new { message = "User does not belong to the course tenant." });
+
+            if (course.Enrollments.Any(e => e.UserId == user.Id))
+                return Conflict(new { message = "User is already enrolled in this course." });
+
+            // Enroll logic here (omitted for brevity)
+            await enrollmentRepository.AddAsync(new Enrollment
+            {
+                CourseId = course.Id,
+                UserId = user.Id
+            });
+
+            return Ok(new { message = "User enrolled successfully." });
+        }
+
+        [HttpGet("enrollments/{userId:guid}")]
+        [UserPermissionAuthorize(UserPermission.ViewCourse | UserPermission.ViewCourses | UserPermission.ManageAllTenants | UserPermission.ManageAllUsers)]
+        public async Task<IActionResult> GetEnrollmentsByUserIdAsync([FromRoute] Guid userId)
+        {
+            if (userId == Guid.Empty)
+                return BadRequest(new { message = "Valid user ID is required." });
+
+            // Return a small projection to minimize payload for UI
+            var enrollments = (await enrollmentRepository.FindAsync())
+                                .Where(e => e.UserId == userId)
+                                .Select(e => new {
+                                    id = e.Id,
+                                    courseId = e.CourseId,
+                                    courseName = e.Course != null ? e.Course.Name : null,
+                                    instructorName = e.Course != null && e.Course.Instructor != null ? e.Course.Instructor.FullName : null,
+                                    enrolledAt = e.EnrolledAt,
+                                    status = e.Status.ToEnrollmentStatusString()
+                                });
+
+            return Ok(enrollments);
+        }
+
+        [HttpDelete("enrollments/{id:guid}")]
+        [UserPermissionAuthorize(UserPermission.EnrollStudents | UserPermission.EnrollCourses | UserPermission.ManageAllTenants | UserPermission.ManageAllUsers)]
+        public async Task<IActionResult> UnenrollStudentAsync([FromRoute] Guid id)
+        {
+            if (id == Guid.Empty)
+                return BadRequest(new { message = "Valid enrollment ID is required." });
+            var enrollment = await enrollmentRepository.FindByIdAsync(id);
+            if (enrollment == null)
+                return NotFound(new { message = "Enrollment not found." });
+
+            await enrollmentRepository.DeleteByIdAsync(enrollment.Id);
+
+            return Ok(new { message = "User unenrolled successfully." });
+        }
+
+
     }
 }

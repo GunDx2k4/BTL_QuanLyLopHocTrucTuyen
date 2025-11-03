@@ -1,0 +1,123 @@
+﻿@model List<BTL_QuanLyLopHocTrucTuyen.Models.Submission>
+
+@{
+    ViewData["Title"] = "Bài đã nộp";
+
+    Func<string, string> GetFileName = (url) =>
+    {
+        if (string.IsNullOrEmpty(url)) return "file";
+        var parts = url.Split('/');
+        return parts[parts.Length - 1];
+    };
+}
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-2">📄 Bài đã nộp</h2>
+            <p class="text-muted">Danh sách các bài tập đã nộp và kết quả chấm điểm</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="@Url.Action("Assignments", "Student")" class="btn btn-primary">📝 Xem bài tập</a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <h3 class="text-primary mb-0">@ViewBag.TotalSubmissions</h3>
+                    <small class="text-muted">Tổng số bài nộp</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h3 class="text-success mb-0">@ViewBag.GradedCount</h3>
+                    <small class="text-muted">Đã chấm điểm</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <h3 class="text-warning mb-0">@ViewBag.PendingCount</h3>
+                    <small class="text-muted">Chờ chấm</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-info">
+                <div class="card-body">
+                    <h3 class="text-info mb-0">@ViewBag.AverageGrade</h3>
+                    <small class="text-muted">Điểm TB</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        @if (Model != null && Model.Count > 0)
+        {
+            @foreach (var submission in Model)
+            {
+                var isGraded = submission.Grade.HasValue;
+
+                <div class="col-12 mb-3">
+                    <div class="card @(isGraded ? "border-success" : "border-warning")">
+                        <div class="card-header @(isGraded ? "bg-success" : "bg-warning") text-white">
+                            <div class="d-flex justify-content-between">
+                                <h5 class="mb-0">📝 @submission.Assignment?.Title</h5>
+                                <span class="badge bg-light @(isGraded ? "text-success" : "text-dark")">
+                                    @(isGraded ? "✅ Đã chấm" : "⏳ Chờ chấm")
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <p class="mb-2"><strong>📚 Khóa học:</strong> @(submission.Assignment?.Lesson?.Course?.Name ?? "N/A")</p>
+                                    <p class="mb-2"><strong>📅 Ngày nộp:</strong> @submission.SubmittedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                                    <p class="mb-2"><strong>📎 File:</strong> @GetFileName(submission.FileUrl)</p>
+                                    @if (isGraded)
+                                    {
+                                        <div class="alert alert-success mt-2 mb-0">
+                                            <h4 class="mb-0">🎯 Điểm: <strong>@submission.Grade?.ToString("0.0")/10</strong></h4>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <a href="@Url.Action("SubmissionDetails", "Student", new { id = submission.Id })"
+                                       class="btn @(isGraded ? "btn-success" : "btn-warning") w-100 mb-2">
+                                        👁️ Xem chi tiết
+                                    </a>
+                                    <button class="btn btn-outline-primary btn-sm w-100" onclick="downloadFile('@submission.Id')">
+                                        📥 Tải file
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <h5>📄 Chưa có bài nộp</h5>
+                    <p class="mb-0">Bạn chưa nộp bài tập nào. <a href="@Url.Action("Assignments", "Student")">Xem bài tập</a>!</p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function downloadFile(submissionId) {
+            window.open('/api/student/submissions/' + submissionId + '/download', '_blank');
+        }
+    </script>
+}

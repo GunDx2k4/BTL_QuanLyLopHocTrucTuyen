@@ -37,12 +37,16 @@ public class SqlServerLessonRepository(SqlServerDbContext context) : ILessonRepo
 
     public async Task<int> UpdateAsync(Lesson entity)
     {
-        _dbSet.Update(entity);
+        var existing = await _dbSet.FindAsync(entity.Id);
+        if (existing == null) return 0;
+
+        context.Entry(existing).CurrentValues.SetValues(entity);
+        _dbSet.Update(existing);
         var updated = await context.SaveChangesAsync();
 
-        await context.Entry(entity).Reference(l => l.Course).LoadAsync();
-        await context.Entry(entity).Collection(l => l.Assignments).LoadAsync();
-        await context.Entry(entity).Collection(l => l.Materials).LoadAsync();
+        await context.Entry(existing).Reference(l => l.Course).LoadAsync();
+        await context.Entry(existing).Collection(l => l.Assignments).LoadAsync();
+        await context.Entry(existing).Collection(l => l.Materials).LoadAsync();
 
         return updated;
     }

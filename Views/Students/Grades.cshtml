@@ -1,0 +1,441 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+
+@model List<BTL_QuanLyLopHocTrucTuyen.Models.Submission>
+
+@{
+    ViewData["Title"] = "Điểm số";
+    var enrollments = ViewBag.Enrollments as List<BTL_QuanLyLopHocTrucTuyen.Models.Enrollment>;
+}
+<div class="container mt-4">
+    <!-- Tiêu đề trang -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-2">🎯 Điểm số và kết quả học tập</h2>
+            <p class="text-muted">Xem điểm số chi tiết từ các khóa học đã tham gia</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-primary" onclick="window.print()">
+                🖨️ In bảng điểm
+            </button>
+        </div>
+    </div>
+
+    <!-- Thống kê tổng quan -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <h3 class="text-primary mb-0">@ViewBag.AverageGrade</h3>
+                    <small class="text-muted">Điểm trung bình</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h3 class="text-success mb-0">@ViewBag.GradedCount</h3>
+                    <small class="text-muted">Bài đã chấm</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <h3 class="text-warning mb-0">@ViewBag.MaxGrade</h3>
+                    <small class="text-muted">Điểm cao nhất</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-danger">
+                <div class="card-body">
+                    <h3 class="text-danger mb-0">@ViewBag.MinGrade</h3>
+                    <small class="text-muted">Điểm thấp nhất</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bộ lọc -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <select class="form-select">
+                <option selected>📚 Tất cả khóa học</option>
+                <option>Lập trình Web</option>
+                <option>Cơ sở dữ liệu</option>
+                <option>Lập trình Python</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <select class="form-select">
+                <option selected>📅 Tất cả học kỳ</option>
+                <option>Học kỳ 1 - 2025</option>
+                <option>Học kỳ 2 - 2025</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Tab Theo khóa học -->
+    <div class="tab-pane fade show active" id="bycourse" role="tabpanel">
+        @if (enrollments != null && enrollments.Any())
+        {
+            @foreach (var enrollment in enrollments.Where(e => e.Status == BTL_QuanLyLopHocTrucTuyen.Models.Enums.EnrollmentStatus.Enrolled))
+            {
+                var courseSubmissions = Model?.Where(s => s.Assignment?.Lesson?.CourseId == enrollment.CourseId).ToList() ?? new List<BTL_QuanLyLopHocTrucTuyen.Models.Submission>();
+                var gradedSubmissions = courseSubmissions.Where(s => s.Grade.HasValue).ToList();
+                var avgGrade = gradedSubmissions.Any() ? gradedSubmissions.Average(s => s.Grade!.Value) : 0;
+
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">📖 @enrollment.Course?.Name</h5>
+                            <span class="badge bg-light text-primary fs-6">
+                                Điểm TB: @avgGrade.ToString("0.0")/10
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-3">
+                            <strong>👨‍🏫 Giảng viên:</strong> @(enrollment.Course?.Instructor?.FullName ?? "N/A") |
+                            <strong>📊 Trạng thái:</strong> <span class="badge bg-success">Đang học</span>
+                        </p>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 5%">#</th>
+                                        <th style="width: 40%">Tên bài tập</th>
+                                        <th style="width: 15%">Ngày nộp</th>
+                                        <th style="width: 15%">Hạn nộp</th>
+                                        <th style="width: 12%">Trạng thái</th>
+                                        <th style="width: 13%">Điểm</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (courseSubmissions.Any())
+                                    {
+                                        int index = 1;
+                                        @foreach (var submission in courseSubmissions.OrderBy(s => s.Assignment?.DueDate))
+                                        {
+                                            var isGraded = submission.Grade.HasValue;
+                                            <tr>
+                                                <td>@index</td>
+                                                <td>@submission.Assignment?.Title</td>
+                                                <td>@submission.SubmittedAt.ToString("dd/MM/yyyy")</td>
+                                                <td>@submission.Assignment?.DueDate.ToString("dd/MM/yyyy")</td>
+                                                <td>
+                                                    @if (isGraded)
+                                                    {
+                                                        <span class="badge bg-success">Đã chấm</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-warning">Chờ chấm</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (isGraded)
+                                                    {
+                                                        <strong class="text-success">@submission.Grade?.ToString("0.0")/10</strong>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">--</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                            index++;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted">Chưa có bài nộp nào</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                @if (gradedSubmissions.Any())
+                                {
+                                    <tfoot class="table-light">
+                                        <tr>
+                                            <th colspan="5" class="text-end">Điểm trung bình:</th>
+                                            <th><strong class="text-primary fs-5">@avgGrade.ToString("0.0")/10</strong></th>
+                                        </tr>
+                                    </tfoot>
+                                }
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <strong>📚 Chưa có khóa học nào!</strong>
+                <p class="mb-0">Bạn chưa đăng ký khóa học nào. <a href="@Url.Action("AvailableCourses", "Student")">Đăng ký ngay</a>!</p>
+            </div>
+        }
+    </div>
+
+    <!-- Nội dung các tab -->
+    <div class="tab-content" id="gradeTabsContent">
+
+        <!-- Tab Theo khóa học -->
+        <div class="tab-pane fade show active" id="bycourse" role="tabpanel">
+
+            <!-- Khóa học 1: Lập trình Web -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">📖 Lập trình Web với ASP.NET Core</h5>
+                        <span class="badge bg-light text-primary fs-6">Điểm TB: 8.5/10</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        <strong>👨‍🏫 Giảng viên:</strong> Nguyễn Văn A |
+                        <strong>📅 Học kỳ:</strong> 1/2025 |
+                        <strong>📊 Trạng thái:</strong> <span class="badge bg-success">Đang học</span>
+                    </p>
+
+                    <!-- Bảng điểm chi tiết -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 5%">#</th>
+                                    <th style="width: 40%">Tên bài tập</th>
+                                    <th style="width: 15%">Ngày nộp</th>
+                                    <th style="width: 15%">Hạn nộp</th>
+                                    <th style="width: 12%">Trạng thái</th>
+                                    <th style="width: 13%">Điểm</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Bài 1 - Đã chấm -->
+                                <tr>
+                                    <td>1</td>
+                                    <td>Bài tập 1: Tạo ứng dụng Hello World</td>
+                                    <td>05/09/2025</td>
+                                    <td>08/09/2025</td>
+                                    <td><span class="badge bg-success">Đã chấm</span></td>
+                                    <td><strong class="text-success">9.0/10</strong></td>
+                                </tr>
+                                <!-- Bài 2 - Chờ chấm -->
+                                <tr>
+                                    <td>2</td>
+                                    <td>Bài tập 2: Controllers và Views</td>
+                                    <td>26/10/2025</td>
+                                    <td>28/10/2025</td>
+                                    <td><span class="badge bg-warning">Chờ chấm</span></td>
+                                    <td><span class="text-muted">--</span></td>
+                                   
+                                </tr>
+                                <!-- Bài 3 - Chưa nộp -->
+                                <tr>
+                                    <td>3</td>
+                                    <td>Bài tập 3: Entity Framework Core</td>
+                                    <td><span class="text-muted">Chưa nộp</span></td>
+                                    <td>10/11/2025</td>
+                                    <td><span class="badge bg-secondary">Chưa nộp</span></td>
+                                    <td><span class="text-muted">--</span></td>
+                                   
+                                </tr>
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="5" class="text-end">Điểm trung bình:</th>
+                                    <th colspan="2"><strong class="text-primary fs-5">8.5/10</strong></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Khóa học 2: Cơ sở dữ liệu -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">📖 Cơ sở dữ liệu</h5>
+                        <span class="badge bg-light text-success fs-6">Điểm TB: 6.8/10</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        <strong>👨‍🏫 Giảng viên:</strong> Trần Thị B |
+                        <strong>📅 Học kỳ:</strong> 1/2025 |
+                        <strong>📊 Trạng thái:</strong> <span class="badge bg-success">Đang học</span>
+                    </p>
+
+                    <!-- Bảng điểm -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 5%">#</th>
+                                    <th style="width: 35%">Tên bài tập</th>
+                                    <th style="width: 15%">Ngày nộp</th>
+                                    <th style="width: 15%">Hạn nộp</th>
+                                    <th style="width: 10%">Trạng thái</th>
+                                    <th style="width: 10%">Điểm</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>Bài tập 1: Thiết kế Database</td>
+                                    <td>20/09/2025</td>
+                                    <td>22/09/2025</td>
+                                    <td><span class="badge bg-success">Đã chấm</span></td>
+                                    <td><strong class="text-warning">7.5/10</strong></td>
+                                   
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td>Bài tập 2: SQL Queries</td>
+                                    <td>08/10/2025</td>
+                                    <td>05/10/2025</td>
+                                    <td><span class="badge bg-danger">Nộp muộn</span></td>
+                                    <td><strong class="text-danger">5.0/10</strong></td>
+                                   
+                                </tr>
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="5" class="text-end">Điểm trung bình:</th>
+                                    <th colspan="2"><strong class="text-success fs-5">6.8/10</strong></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Tổng hợp -->
+        <div class="tab-pane fade" id="summary" role="tabpanel">
+
+            <!-- Bảng tổng hợp theo khóa học -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">📊 Bảng điểm tổng hợp</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 5%">#</th>
+                                    <th style="width: 30%">Khóa học</th>
+                                    <th style="width: 20%">Giảng viên</th>
+                                    <th style="width: 15%">Số bài tập</th>
+                                    <th style="width: 15%">Đã chấm</th>
+                                    <th style="width: 15%">Điểm TB</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>Lập trình Web với ASP.NET Core</td>
+                                    <td>Nguyễn Văn A</td>
+                                    <td>3</td>
+                                    <td>1</td>
+                                    <td><strong class="text-success">8.5/10</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td>Cơ sở dữ liệu</td>
+                                    <td>Trần Thị B</td>
+                                    <td>2</td>
+                                    <td>2</td>
+                                    <td><strong class="text-warning">6.8/10</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td>Lập trình Python</td>
+                                    <td>Lê Văn C</td>
+                                    <td>0</td>
+                                    <td>0</td>
+                                    <td><span class="text-muted">--</span></td>
+                                </tr>
+                            </tbody>
+                            <tfoot class="table-primary">
+                                <tr>
+                                    <th colspan="5" class="text-end fs-5">Điểm trung bình tổng:</th>
+                                    <th><strong class="text-primary fs-4">7.7/10</strong></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Biểu đồ cột đơn giản (dạng progress bar) -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">📈 Biểu đồ điểm số</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Lập trình Web -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Lập trình Web</span>
+                            <strong>8.5/10</strong>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 85%">85%</div>
+                        </div>
+                    </div>
+
+                    <!-- Cơ sở dữ liệu -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Cơ sở dữ liệu</span>
+                            <strong>6.8/10</strong>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: 68%">68%</div>
+                        </div>
+                    </div>
+
+                    <!-- Python -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Lập trình Python</span>
+                            <strong>Chưa có điểm</strong>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-secondary" role="progressbar" style="width: 0%">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Xếp loại học lực -->
+            <div class="card border-success mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">🏆 Xếp loại học lực</h5>
+                </div>
+                <div class="card-body text-center">
+                    <h2 class="text-success mb-3">KHÁ</h2>
+                    <p class="mb-2">Điểm trung bình: <strong class="fs-4">7.7/10</strong></p>
+                    <p class="text-muted mb-0">
+                        <small>
+                            Xuất sắc: ≥ 9.0 | Giỏi: ≥ 8.0 | Khá: ≥ 7.0 | Trung bình: ≥ 5.0
+                        </small>
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+>

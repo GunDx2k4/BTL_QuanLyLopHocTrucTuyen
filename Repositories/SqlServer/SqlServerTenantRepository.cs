@@ -51,13 +51,16 @@ public class SqlServerTenantRepository(SqlServerDbContext context) : ITenantRepo
 
     public async Task<int> UpdateAsync(Tenant entity)
     {
-        _dbSet.Update(entity);
-        
+        var existing = await _dbSet.FindAsync(entity.Id);
+        if (existing == null) return 0;
+
+        context.Entry(existing).CurrentValues.SetValues(entity);
+        _dbSet.Update(existing);
         var updated = await context.SaveChangesAsync();
 
-        await context.Entry(entity).Reference(t => t.Owner).LoadAsync();
-        await context.Entry(entity).Collection(t => t.Roles).LoadAsync();
-        await context.Entry(entity).Collection(t => t.Users).LoadAsync();
+        await context.Entry(existing).Reference(t => t.Owner).LoadAsync();
+        await context.Entry(existing).Collection(t => t.Roles).LoadAsync();
+        await context.Entry(existing).Collection(t => t.Users).LoadAsync();
 
         return updated;
     }

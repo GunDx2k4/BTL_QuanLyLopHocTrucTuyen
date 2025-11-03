@@ -41,15 +41,24 @@ public class SqlServerCourseRepository(SqlServerDbContext context) : ICourseRepo
 
     public async Task<int> UpdateAsync(Course entity)
     {
-        _dbSet.Update(entity);
+        var existing = await _dbSet.FindAsync(entity.Id);
+        if (existing == null) return 0;
+
+        context.Entry(existing).CurrentValues.SetValues(entity);
+        _dbSet.Update(existing);
         var updated = await context.SaveChangesAsync();
-        
-        await context.Entry(entity).Reference(c => c.Instructor).LoadAsync();
-        await context.Entry(entity).Reference(c => c.Tenant).LoadAsync();
-        await context.Entry(entity).Collection(c => c.Lessons).LoadAsync();
-        await context.Entry(entity).Collection(c => c.Enrollments).LoadAsync();
+
+        await context.Entry(existing).Reference(c => c.Instructor).LoadAsync();
+        await context.Entry(existing).Reference(c => c.Tenant).LoadAsync();
+        await context.Entry(existing).Collection(c => c.Lessons).LoadAsync();
+        await context.Entry(existing).Collection(c => c.Enrollments).LoadAsync();
 
         return updated;
+    }
+
+    public async Task<int> UpdateAsync(Course entity, Course newEntity)
+    {
+        return await UpdateAsync(newEntity);
     }
 
     public async Task<int> DeleteAllAsync()

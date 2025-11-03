@@ -40,7 +40,7 @@ public static class PermissionHelper
 
         var permissions = user.Role.Permissions;
 
-        if (user.Tenant == null) return controller.View("RegisterTenant");
+        if (user.Tenant == null && permissions != UserPermission.Administrator) return controller.View("RegisterTenant");
 
         if (permissions == UserPermission.None) return controller.View();
 

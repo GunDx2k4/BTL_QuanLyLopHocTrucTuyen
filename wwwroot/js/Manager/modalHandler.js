@@ -62,14 +62,15 @@ $("#formAddPlan").on("submit", (e) => {
             newPlan: parseInt($("#planType").val()),
             durationInMonths: parseInt($("#planType").val()) >= 1 ? parseInt($("#monthCount").val()) : 0
         })
-    }).then(response => {
+    }).then( async response => {
         if (!response.ok) {
-            showModal("Lỗi: " + response.statusText);
+            const errorData = await response.json();
+            showModal("Lỗi: " + errorData.message);
             $("#modalPlan").modal('hide');
             return;
         }
         $("#modalPlan").modal('hide');
-        showModal("Cập nhật gói thành công!", "/");
+        showModal("Cập nhật gói thành công!");
     }).catch(err => {
         $("#alert").text("Đã có lỗi xảy ra: " + err.message).show();
     });
@@ -89,14 +90,15 @@ $("#formAddInstructor").on("submit", (e) => {
             email: $("#instructorEmail").val(),
             password: $("#instructorPassword").val()
         })
-    }).then(response => {
+    }).then( async response => {
         if (!response.ok) {
-            showModal("Lỗi: " + response.statusText);
+            const errorData = await response.json();
+            showModal("Lỗi: " + errorData.message);
             $("#modalInstructor").modal('hide');
             return;
         }
         $("#modalInstructor").modal('hide');
-        showModal("Thêm giảng viên thành công!", "/");
+        showModal("Thêm giảng viên thành công!");
     }).catch(err => {
         $("#alert").text("Đã có lỗi xảy ra: " + err.message).show();
     });
@@ -115,14 +117,15 @@ $("#formAddStudent").on("submit", (e) => {
             email: $("#studentEmail").val(),
             password: $("#studentPassword").val()
         })
-    }).then(response => {
+    }).then( async response => {
         if (!response.ok) {
-            showModal("Lỗi: " + response.statusText);
+            const errorData = await response.json();
+            showModal("Lỗi: " + errorData.message);
             $("#modalStudent").modal('hide');
             return;
         }
         $("#modalStudent").modal('hide');
-        showModal("Thêm học viên thành công!", "/");
+        showModal("Thêm học viên thành công!");
     }).catch(err => {
         $("#alert").text("Đã có lỗi xảy ra: " + err.message).show();
     });
@@ -170,14 +173,15 @@ $("#formAddCourse").on("submit", (e) => {
             tenantId: tenantId,
             instructorId: $("#instructorId").val()
         })
-    }).then(response => {
+    }).then( async response => {
         if (!response.ok) {
-            showModal("Lỗi: " + response.statusText);
+            const errorData = await response.json();
+            showModal("Lỗi: " + errorData.message);
             $("#modalCourse").modal('hide');
             return;
         }
         $("#modalCourse").modal('hide');
-        showModal("Thêm khoá học thành công!", "/");
+        showModal("Thêm khoá học thành công!");
     }).catch(err => {
         $("#alertCourse").text("Đã có lỗi xảy ra: " + err.message).show();
     });

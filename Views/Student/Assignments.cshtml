@@ -1,0 +1,29 @@
+﻿
+@{
+    ViewData["Title"] = "Bài tập của tôi";
+    var submissions = ViewBag.Submissions as List<BTL_QuanLyLopHocTrucTuyen.Models.Submission>;
+    Layout = "~/Views/Shared/_StudentLayout.cshtml";
+}
+
+
+
+
+
+
+                                    {
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <h5>📝 Chưa có bài tập nào</h5>
+                    <p class="mb-0">
+                        Bạn chưa có bài tập nào.
+                        <a href="@Url.Action("MyCourses", "Student")">Xem khóa học</a> để nhận bài tập.
+                    </p>
+                </div>
+            </div>
+        }
+    </div>
+</div>

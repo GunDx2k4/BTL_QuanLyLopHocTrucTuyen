@@ -1,3 +1,323 @@
 ﻿@{
-    Layout = "_LayoutManager"; 
+    Layout = "_LayoutManager";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0">Quản lý Học Viên</h1>
+        <div>
+            <a class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalStudent">Thêm Học Viên</a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm bg-white">
+        <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="input-group w-50">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input id="studentSearch" type="search" class="form-control" placeholder="Tìm kiếm học viên..." />
+                </div>
+                <div class="text-muted small">Tổng: <span id="studentCount">0</span></div>
+            </div>
+
+            <div class="liststudents">
+                <!-- student cards rendered by JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User edit/add modal (simple) -->
+<div class="modal fade" id="modalUser" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formUser">
+        <div class="modal-header">
+          <h5 class="modal-title">Sửa Người Dùng</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="alertUser" class="alert alert-danger d-none"></div>
+          <input type="hidden" id="userId" />
+          <div class="mb-3">
+            <label class="form-label">Họ và tên</label>
+            <input id="userFullName" class="form-control" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input id="userEmail" class="form-control" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+          <button type="submit" class="btn btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- User details modal -->
+<div class="modal fade" id="modalUserDetails" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Chi tiết Người Dùng</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="detailsAlert" class="alert alert-danger d-none"></div>
+        <dl class="row">
+          <dt class="col-sm-3">Họ và tên</dt><dd class="col-sm-9" id="detailsUserFullName"></dd>
+          <dt class="col-sm-3">Email</dt><dd class="col-sm-9" id="detailsUserEmail"></dd>
+        </dl>
+                <hr />
+                <h6>Khoá học đã đăng ký</h6>
+                <div id="detailsUserEnrollments">
+                        <div class="text-muted">Đang tải khoá học...</div>
+                </div>
+      </div>
+      <div class="modal-footer">
+        <button id="detailsEditBtn" class="btn btn-warning">Sửa</button>
+        <button id="detailsDeleteBtn" class="btn btn-danger">Xóa</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@await Html.PartialAsync("_ModalStudent")
+
+@section Scripts {
+    <script>
+        let students = [];
+        let editingUserId = null;
+
+        async function loadStudents() {
+            const container = $('.liststudents');
+            container.html('<div class="text-center text-muted py-4">Đang tải...</div>');
+            try {
+                const res = await fetch('/api/users/students');
+                if (!res.ok) throw new Error('Không thể tải danh sách sinh viên');
+                students = await res.json();
+                $('#studentCount').text(students.length || 0);
+                renderStudents();
+            } catch (err) {
+                container.html('<div class="text-danger text-center">Lỗi khi tải dữ liệu</div>');
+                console.error(err);
+            }
+        }
+
+        function renderStudents() {
+            const container = $('.liststudents');
+            if (!students || students.length === 0) {
+                container.html('<div class="text-center text-muted py-4">Không có sinh viên</div>');
+                $('#studentCount').text(0);
+                return;
+            }
+            const q = ($('#studentSearch').val() || '').toLowerCase();
+            const filtered = students.filter(u => {
+                if (!q) return true;
+                const name = (u.fullName || '').toLowerCase();
+                const email = (u.email || '').toLowerCase();
+                return name.includes(q) || email.includes(q);
+            });
+            $('#studentCount').text(filtered.length);
+            const cards = filtered.map(u => {
+                return `
+                    <div class="card mb-3">
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                            <div>
+                                <h5 class="card-title mb-1">${escapeHtml(u.fullName || u.name || 'Tên trống')}</h5>
+                                <p class="mb-1 text-muted small">${escapeHtml(u.email || '')}</p>
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-primary btn-sm me-1" onclick="onViewUser('${u.id}')">Xem</button>
+                                <button class="btn btn-warning btn-sm me-1 text-dark" onclick="onEditUser('${u.id}')">Sửa</button>
+                                <button class="btn btn-danger btn-sm" onclick="onDeleteUser('${u.id}')">Xóa</button>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+            container.html(cards);
+        }
+
+        async function onViewUser(id) {
+            try {
+                const res = await fetch(`/api/users/${id}`);
+                if (!res.ok) throw new Error('Không thể tải chi tiết người dùng');
+                const u = await res.json();
+                $('#detailsUserFullName').text(u.fullName || '');
+                $('#detailsUserEmail').text(u.email || '');
+
+                $('#detailsEditBtn').off('click').on('click', () => {
+                    $('#modalUserDetails').modal('hide');
+                    onEditUser(u.id);
+                });
+                $('#detailsDeleteBtn').off('click').on('click', () => {
+                    $('#modalUserDetails').modal('hide');
+                    onDeleteUser(u.id);
+                });
+
+                $('#modalUserDetails').modal('show');
+                        // load enrolled courses for this user using optimized API
+                        try {
+                            const enrollRes = await fetch(`/api/courses/enrollments/${u.id}`);
+                            if (!enrollRes.ok) throw new Error('Không thể tải danh sách đăng ký');
+                            const enrollments = await enrollRes.json();
+                            // each enrollment should include Course via repository includes
+                            // server returns compact objects: { id, courseId, courseName, instructorName, enrolledAt, status }
+                            const items = (enrollments || []).map(e => ({
+                                course: { name: e.courseName, instructor: { fullName: e.instructorName } },
+                                enrollment: { id: e.id, enrolledAt: e.enrolledAt, status: e.status }
+                            }));
+                            renderUserEnrollments(items);
+                        } catch (err) {
+                            $('#detailsUserEnrollments').html('<div class="text-danger">Lỗi khi tải khoá học: ' + escapeHtml(err.message) + '</div>');
+                        }
+            } catch (err) {
+                showMessage('Lỗi: ' + err.message);
+            }
+        }
+
+        function onEditUser(id) {
+            editingUserId = id;
+            // fetch user to prefill
+            if (!id) {
+                // new user
+                $('#userId').val('');
+                $('#userFullName').val('');
+                $('#userEmail').val('');
+                $('#modalUser').modal('show');
+                return;
+            }
+            fetch(`/api/users/${id}`).then(r => r.json()).then(u => {
+                $('#userId').val(u.id || '');
+                $('#userFullName').val(u.fullName || '');
+                $('#userEmail').val(u.email || '');
+                $('#modalUser').modal('show');
+            }).catch(err => showMessage('Lỗi: ' + err.message));
+        }
+
+        // submit add student (uses _ModalStudent partial)
+        $('#formAddStudent').off('submit').on('submit', async function (e) {
+            e.preventDefault();
+            const name = $('#studentName').val();
+            const email = $('#studentEmail').val();
+            const password = $('#studentPassword').val();
+            try {
+                const resp = await fetch('/api/users/students', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fullName: name, email: email, password: password })
+                });
+                if (!resp.ok)
+                {
+                    const errText = await resp.json();
+                    $('#formAddStudent #alert').removeClass('d-none').text('Lỗi: ' + errText.message);
+                    return;
+                }
+                $('#modalStudent').modal('hide');
+                showMessage('Tạo học viên thành công');
+                await loadStudents();
+            } catch (err) {
+                $('#formAddStudent #alert').removeClass('d-none').text('Lỗi: ' + err.message);
+            }
+        });
+
+        // submit edit/create
+        $('#formUser').on('submit', async function (e) {
+            e.preventDefault();
+            const id = $('#userId').val();
+            const payload = {
+                id: id || undefined,
+                fullName: $('#userFullName').val(),
+                email: $('#userEmail').val()
+            };
+            try {
+                if (id) {
+                    // update: fetch full entity first to preserve required fields
+                    const existing = await (await fetch(`/api/users/${id}`)).json();
+                    existing.fullName = payload.fullName;
+                    existing.email = payload.email;
+                    const resp = await fetch('/api/users', {
+                        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(existing)
+                    });
+                    if (!resp.ok) 
+                    {
+                        throw new Error(await resp.text() || resp.statusText);
+                        return;
+                    }
+                    $('#modalUser').modal('hide');
+                    showMessage('Cập nhật người dùng thành công');
+                } else {
+                    showMessage('Lỗi: Tạo người dùng đã bị vô hiệu hóa trong phiên bản này.');
+                }
+                await loadStudents();
+            } catch (err) {
+                $('#alertUser').removeClass('d-none').text('Lỗi: ' + err.message);
+            }
+        });
+
+        async function onDeleteUser(id) {
+            if (!confirm('Bạn có chắc muốn xóa người dùng này?')) return;
+            try {
+                const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error(await res.text() || res.statusText);
+                showMessage('Xóa người dùng thành công');
+                await loadStudents();
+            } catch (err) {
+                showMessage('Lỗi: ' + err.message);
+            }
+        }
+
+        function showMessage(message, redirect = null) {
+            // reuse global showModal if available
+            if (typeof showModal === 'function') {
+                showModal(message, redirect);
+                return;
+            }
+            alert(message);
+            if (redirect) window.location.href = redirect;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/[&<>"]+/g, function (s) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[s]; });
+        }
+
+        function renderUserEnrollments(items) {
+            const container = $('#detailsUserEnrollments');
+            if (!items || items.length === 0) {
+                container.html('<div class="text-muted">Không có khoá học đã đăng ký</div>');
+                return;
+            }
+            const rows = items.map(it => {
+                const course = it.course || {};
+                const enrollment = it.enrollment || {};
+                const name = escapeHtml(course.name || course.name || 'Không tên');
+                const instructor = escapeHtml((course.instructor && course.instructor.fullName) ? course.instructor.fullName : (course.instructorName || 'N/A'));
+                const enrolledAt = enrollment.enrolledAt ? new Date(enrollment.enrolledAt).toLocaleDateString() : '--';
+                const status = enrollment.status ? String(enrollment.status) : '';
+                return `
+                    <div class="card mb-2">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold">${name}</div>
+                                <div class="text-muted small">Giảng viên: ${instructor}</div>
+                            </div>
+                            <div class="text-end small text-muted">Đăng ký: ${enrolledAt}${status ? ' • ' + status : ''}</div>
+                        </div>
+                    </div>`;
+            }).join('');
+            container.html(rows);
+        }
+
+        $(document).ready(() => {
+            loadStudents();
+            $('#studentSearch').on('input', () => renderStudents());
+            // cleanup modals
+            $('#modalUser').on('hidden.bs.modal', () => { $('#alertUser').addClass('d-none').text(''); $('#formUser')[0].reset(); editingUserId = null; });
+            $('#modalUserDetails').on('hidden.bs.modal', () => { $('#detailsAlert').addClass('d-none').text(''); $('#detailsUserFullName').text(''); });
+        });
+    </script>
 }
