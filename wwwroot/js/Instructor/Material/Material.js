@@ -1,46 +1,57 @@
 $(document).ready(function () {
+    document.querySelectorAll(".lesson-header").forEach(header => {
+            header.addEventListener("click", () => {
+                header.classList.toggle("active");
+            });
+        });
 
     /* =====================================================
-       🔍 TÌM KIẾM TÀI LIỆU (hỗ trợ tiếng Việt có dấu)
+       🔍 TÌM KIẾM BÀI TẬP
     ===================================================== */
-    $(".search-input, .filter-select").on("input change", function () {
-        const keyword = removeVietnameseTones($(".search-input").val().toLowerCase().trim());
-        const selectedLesson = $(".filter-select").val(); // ID bài học được chọn
+    $(".search-input").on("input", function () {
+        const keyword = removeVietnameseTones($(this).val().toLowerCase().trim());
 
-        $(".lesson-section").each(function () {
-            const lessonId = $(this).data("lesson-id")?.toString();
+        if (keyword === "") {
+            $(".lesson-group").show();
+            $(".material-card").show();
+            return;
+        }
+
+        $(".lesson-group").each(function () {
+            let matchFound = false;
             const lessonTitle = removeVietnameseTones($(this).find(".lesson-title").text().toLowerCase());
 
-            let hasMatch = false;
-
             $(this).find(".material-card").each(function () {
-                const materialTitle = removeVietnameseTones($(this).find("h6").text().toLowerCase());
+                const title = removeVietnameseTones($(this).find(".material-title").text().toLowerCase());
 
-                const matchKeyword =
-                    !keyword ||
-                    lessonTitle.includes(keyword) ||
-                    materialTitle.includes(keyword);
+                const isMatch =
+                    title.includes(keyword) ||
+                    lessonTitle.includes(keyword);
 
-                const matchLesson =
-                    !selectedLesson || selectedLesson === lessonId;
-
-                const isVisible = matchKeyword && matchLesson;
-
-                $(this).toggle(isVisible);
-                if (isVisible) hasMatch = true;
+                $(this).toggle(isMatch);
+                if (isMatch) matchFound = true;
             });
 
-            $(this).toggle(hasMatch);
+            $(this).toggle(matchFound);
+
+            // ✅ Nếu tìm thấy kết quả trong lesson, tự mở ra
+            if (matchFound) {
+                $(this).find(".lesson-material-list").addClass("show").collapse("show");
+                $(this).find(".lesson-header").addClass("active");
+            }
         });
     });
 
-    // ===== Hàm loại bỏ dấu tiếng Việt =====
+    /* =====================================================
+    🔠 HÀM LOẠI BỎ DẤU TIẾNG VIỆT
+    ===================================================== */
     function removeVietnameseTones(str) {
+        if (!str) return "";
         return str
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/đ/g, "d")
-            .replace(/Đ/g, "D");
+            .normalize("NFD")                     // tách dấu ra khỏi ký tự
+            .replace(/[\u0300-\u036f]/g, "")      // xóa các dấu thanh
+            .replace(/đ/g, "d").replace(/Đ/g, "D")// thay đ → d
+            .replace(/[^a-zA-Z0-9\s]/g, "");      // loại bỏ ký tự đặc biệt
     }
 
 
@@ -50,48 +61,54 @@ $(document).ready(function () {
     $(document).on("click", ".btn-toggle", function () {
         const btn = $(this);
         const id = btn.data("id");
-
         if (!id) {
             showToast("❌ Không tìm thấy ID tài liệu!", true);
             return;
         }
 
         $.ajax({
-            url: `/Instructor/TogglePublicMaterial?id=${id}`, // Gửi id qua query string
+            url: `/Instructor/TogglePublicMaterial?id=${id}`,
             type: "POST",
             success: function (res) {
-                console.log("TogglePublic response:", res);
-                if (res.success) {
-                    const isPublic = res.isPublic;
-                    const card = btn.closest(".material-card");
-
-                    // Đổi icon & màu nút
-                    btn.toggleClass("btn-success btn-outline-secondary");
-                    btn.find("i").toggleClass("bi-eye bi-eye-slash");
-
-                    // Cập nhật text trạng thái
-                    card.find(".meta .status-text").remove();
-                    const statusHtml = `<span class="status-text ms-1 text-${isPublic ? "success" : "secondary"}">
-                        ${isPublic ? "Công khai" : "Riêng tư"}
-                    </span>`;
-                    card.find(".meta").append(statusHtml);
-
-                    // Hiển thị thông báo
-                    showToast(
-                        isPublic
-                            ? "👁️ Tài liệu đã được công khai!"
-                            : "🙈 Tài liệu đã được ẩn đi!"
-                    );
-                } else {
+                if (!res.success) {
                     showToast("❌ " + (res.message || "Không thể cập nhật trạng thái!"), true);
+                    return;
                 }
+
+                const isPublic = res.isPublic;
+                const card = btn.closest(".material-card");
+
+                // 1) đổi nút
+                btn.toggleClass("btn-success btn-outline-secondary");
+                btn.find("i").toggleClass("bi-eye bi-eye-slash");
+
+                // 2) đổi phần trạng thái ở meta
+                const statusWrap = card.find(".material-status");
+                const icon = statusWrap.find("i");
+                const text = statusWrap.find(".status-text");
+
+                if (isPublic) {
+                    icon.removeClass("bi-eye-slash text-secondary")
+                        .addClass("bi-eye text-success");
+                    text.removeClass("text-secondary")
+                        .addClass("text-success")
+                        .text("Công khai");
+                } else {
+                    icon.removeClass("bi-eye text-success")
+                        .addClass("bi-eye-slash text-secondary");
+                    text.removeClass("text-success")
+                        .addClass("text-secondary")
+                        .text("Riêng tư");
+                }
+
+                showToast(isPublic ? "👁️ Tài liệu đã được công khai!" : "🙈 Tài liệu đã được ẩn!", false);
             },
-            error: function (xhr) {
-                console.error("TogglePublic error:", xhr.responseText);
+            error: function () {
                 showToast("⚠️ Lỗi khi đổi trạng thái công khai!", true);
             }
         });
     });
+
 
 
 

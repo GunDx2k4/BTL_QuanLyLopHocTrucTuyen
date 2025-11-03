@@ -1,13 +1,12 @@
 /* ======= Tổng thể ======= */
 .content-main {
     background-color: #ffffff;
-    margin: 15px;
     padding: 20px 25px;
     border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 100px);
+    height: 100%;
 }
 
 /* ======= Header ======= */
@@ -195,27 +194,151 @@
 }
 
 
-/* ===== Responsive ===== */
-@media (max-width: 768px) {
-    .content-main {
-        padding: 15px;
-        height: auto;
-    }
 
-    .listlesson {
-        grid-template-columns: 1fr 1fr;
+
+/* ======= Responsive ======= */
+
+
+/* ======= Mobile-first tối ưu ======= */
+@media (max-width: 768px) {
+    
+
+    /* ✅ Gọn gàng header */
+    .header-lesson {
+        flex-direction: column;
+        align-items: stretch;
         gap: 10px;
     }
 
-    .lesson-actions {
-        flex-direction: column;
-        gap: 6px;
+    .header-lesson h5 {
+        text-align: center;
+        font-size: 18px;
     }
+
+    /* ✅ Ô tìm kiếm full width */
+    .header-lesson label {
+        width: 100%;
+        background: #f9fafb;
+        border-radius: 8px;
+        padding: 8px 12px;
+        border: 1px solid #e0e3e8;
+    }
+
+    .header-lesson label i {
+        font-size: 16px;
+    }
+
+    /* ✅ Nút "Thêm bài học" nổi bật full width */
+    .header-lesson .btn {
+        width: 100%;
+        font-weight: 600;
+        font-size: 15px;
+        padding: 10px;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #0d6efd, #3a86ff);
+        box-shadow: 0 3px 8px rgba(13, 110, 253, 0.3);
+    }
+
+    /* ✅ Danh sách hiển thị thoáng hơn */
+    .listlesson {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding: 4px 2px;
+    }
+
+    /* ✅ Card bài học nhỏ gọn hơn */
+    .lesson-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 14px 16px;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .lesson-header h6 {
+        font-size: 16px;
+        max-width: 100%;
+    }
+
+    .lesson-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 3px;
+        font-size: 14px;
+    }
+
+    /* ✅ Nút hành động full width, cách đều */
+    .lesson-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
 }
 
-@media (max-width: 480px) {
-    .listlesson {
-        grid-template-columns: 1fr;
-    }
+/* ✅ Gộp chung style cho cả a & button */
+.lesson-actions a,
+.lesson-actions button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+
+    /* Làm cho các nút bằng chiều cao */
+    height: 42px; /* 🔹 cố định chiều cao */
+    box-sizing: border-box;
+
+    padding: 0; /* bỏ padding để height đồng nhất */
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+
+    /* Reset khác biệt giữa a và button */
+    line-height: 1;
+    appearance: none;
 }
-    
+
+/* ✅ Màu sắc nhất quán */
+.btn-view {
+    background-color: #0d6efd;
+    color: #fff;
+}
+
+.btn-edit {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.btn-delete {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+/* ✅ Hover/ấn đồng bộ */
+.lesson-actions a:hover,
+.lesson-actions button:hover {
+    transform: scale(1.04);
+    opacity: 0.9;
+}
+
+.lesson-actions a:active,
+.lesson-actions button:active {
+    transform: scale(0.96);
+}
+
+/* ✅ Biểu tượng đồng đều */
+.lesson-actions i {
+    font-size: 15px;
+    margin-right: 4px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+}

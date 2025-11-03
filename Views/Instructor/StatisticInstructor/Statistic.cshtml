@@ -1,0 +1,97 @@
+@{
+    ViewData["Title"] = "Thống kê học viên";
+    Layout = "~/Views/Instructor/Shared/_InstructorLayout.cshtml";
+}
+
+<link rel="stylesheet" href="~/css/Instructor/Statistic/Statistic.css" asp-append-version="true" />
+
+<div class="content-main statistic-page">
+    <!-- 🔹 HEADER -->
+    <div class="header-statistic d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <h4 class="fw-bold text-primary mb-0">
+            <i class="bi bi-bar-chart-line-fill me-2"></i>
+            Thống kê học viên & bài tập
+            <small class="text-muted">(@ViewBag.CurrentCourseName)</small>
+        </h4>
+
+        <div class="filter-course position-relative" style="min-width:260px;">
+            <div class="input-wrapper position-relative">
+                <input type="text" id="courseSearch" class="form-control pe-5"
+                       placeholder="Tìm hoặc chọn khóa học..." autocomplete="off"
+                       value="@ViewBag.CurrentCourseName">
+                <button type="button" id="clearCourse" class="btn-clear" title="Xóa lựa chọn">&times;</button>
+            </div>
+
+            <ul id="courseDropdown"
+                class="list-group position-absolute w-100 shadow-sm bg-white border"
+                style="display:none; z-index:1050; max-height:240px; overflow-y:auto;">
+                @foreach (var course in ViewBag.Courses)
+                {
+                    <li class="list-group-item list-group-item-action @(course.Id == ViewBag.CurrentCourseId ? "active" : "")"
+                        data-id="@course.Id">@course.Name</li>
+                }
+            </ul>
+        </div>
+    </div>
+
+    <!-- 🔹 THỐNG KÊ TỔNG QUAN -->
+    <div class="overview-grid">
+        <div class="stat-card bg-gradient-primary">
+            <i class="bi bi-journal-code"></i>
+            <div>
+                <p class="label">Khóa học đang dạy</p>
+                <h5 class="value">@ViewBag.Courses?.Count</h5>
+            </div>
+        </div>
+        <div class="stat-card bg-gradient-success">
+            <i class="bi bi-person-check-fill"></i>
+            <div>
+                <p class="label">Sinh viên đã nộp bài</p>
+                <h5 class="value">92</h5>
+            </div>
+        </div>
+        <div class="stat-card bg-gradient-warning">
+            <i class="bi bi-hourglass-split"></i>
+            <div>
+                <p class="label">Chưa nộp bài</p>
+                <h5 class="value">28</h5>
+            </div>
+        </div>
+        <div class="stat-card bg-gradient-danger">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div>
+                <p class="label">Bài bị trễ hạn</p>
+                <h5 class="value">6</h5>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔹 BIỂU ĐỒ -->
+    <div class="chart-section mt-5">
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="chart-card p-4 shadow-sm rounded-3">
+                    <h6 class="fw-bold text-secondary mb-3">
+                        <i class="bi bi-bar-chart-line me-2"></i>Số lượng học viên nộp bài theo từng bài tập
+                    </h6>
+                    <canvas id="submissionChart" height="250"></canvas>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="chart-card p-4 shadow-sm rounded-3">
+                    <h6 class="fw-bold text-secondary mb-3">
+                        <i class="bi bi-pie-chart-fill me-2"></i>Tỷ lệ nộp bài / chưa nộp
+                    </h6>
+                    <canvas id="rateChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="~/js/Instructor/Statistic/Statistic.js" asp-append-version="true"></script>
+}

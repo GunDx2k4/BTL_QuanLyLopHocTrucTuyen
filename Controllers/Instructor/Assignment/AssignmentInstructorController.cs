@@ -2,48 +2,75 @@ using BTL_QuanLyLopHocTrucTuyen.Data;
 using BTL_QuanLyLopHocTrucTuyen.Models;
 using BTL_QuanLyLopHocTrucTuyen.Services;
 using BTL_QuanLyLopHocTrucTuyen.Repositories;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using BTL_QuanLyLopHocTrucTuyen.Core.Controllers;
+using Microsoft.EntityFrameworkCore;
 
 namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 {
     [Route("Instructor/[action]")]
-    public class AssignmentInstructorController : Controller
+    public class AssignmentInstructorController : BaseInstructorController
     {
         private readonly IAssignmentRepository _assignmentRepository;
         private readonly ILessonRepository _lessonRepository;
         private readonly SupabaseStorageService _supabaseStorage;
+        private readonly ApplicationDbContext _context;
 
         public AssignmentInstructorController(
+            ApplicationDbContext context,
             IAssignmentRepository assignmentRepository,
             ILessonRepository lessonRepository,
             SupabaseStorageService supabaseStorage)
         {
+            _context = context;
             _assignmentRepository = assignmentRepository;
             _lessonRepository = lessonRepository;
             _supabaseStorage = supabaseStorage;
         }
 
         /* =====================================================
-           📋 DANH SÁCH BÀI TẬP
+           📋 DANH SÁCH BÀI TẬP TRONG KHÓA HỌC HIỆN TẠI
         ===================================================== */
         [HttpGet]
         public async Task<IActionResult> Assignment()
         {
-            var assignments = (await _assignmentRepository.FindAsync())
-                .OrderByDescending(a => a.CreatedAt)
-                .ToList();
+            var redirect = EnsureCourseSelected();
+            if (redirect != null) return redirect;
 
+            var courseId = GetCurrentCourseId()!.Value;
+
+            // 🔹 Lấy toàn bộ bài tập thuộc các bài học trong khóa học này
+            var assignments = await _context.Assignments
+                .Include(a => a.Lesson)
+                .Where(a => a.Lesson != null && a.Lesson.CourseId == courseId)
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync();
+
+
+            ViewBag.CourseName = GetCurrentCourseName();
             return View("~/Views/Instructor/AssignmentInstructor/Assignment.cshtml", assignments);
         }
 
         /* =====================================================
-           ➕ THÊM BÀI TẬP (Supabase)
+           ➕ THÊM BÀI TẬP
         ===================================================== */
         [HttpGet]
         public async Task<IActionResult> AddAssignment(Guid? lessonId)
         {
-            ViewBag.Lessons = (await _lessonRepository.FindAsync()).OrderBy(l => l.Title).ToList();
+            var redirect = EnsureCourseSelected();
+            if (redirect != null) return redirect;
+
+            var courseId = GetCurrentCourseId()!.Value;
+
+            // 🔹 Lọc chỉ lấy bài học của khóa học hiện tại
+            var lessons = (await _lessonRepository.FindAsync())
+                .Where(l => l.CourseId == courseId)
+                .OrderBy(l => l.Title)
+                .ToList();
+
+            ViewBag.Lessons = lessons;
+            ViewBag.CourseName = GetCurrentCourseName();
+
             var assignment = new Assignment { LessonId = lessonId ?? Guid.Empty };
             return View("~/Views/Instructor/AssignmentInstructor/AddAssignment.cshtml", assignment);
         }
@@ -52,12 +79,17 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddAssignment([FromForm] Assignment assignment)
         {
-            Console.WriteLine("===== 🧩 BẮT ĐẦU XỬ LÝ THÊM BÀI TẬP =====");
-            Console.WriteLine($"📘 Tiêu đề: {assignment.Title}");
+            var redirect = EnsureCourseSelected();
+            if (redirect != null) return redirect;
+
+            var courseId = GetCurrentCourseId()!.Value;
 
             if (!ModelState.IsValid)
             {
-                ViewBag.Lessons = (await _lessonRepository.FindAsync()).OrderBy(l => l.Title).ToList();
+                ViewBag.Lessons = (await _lessonRepository.FindAsync())
+                    .Where(l => l.CourseId == courseId)
+                    .OrderBy(l => l.Title)
+                    .ToList();
                 return View("~/Views/Instructor/AssignmentInstructor/AddAssignment.cshtml", assignment);
             }
 
@@ -66,7 +98,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 
             try
             {
-                // ✅ Nếu có file upload → lưu lên Supabase
+                // ✅ Nếu có file upload → upload lên Supabase
                 if (assignment.UploadFile != null && assignment.UploadFile.Length > 0)
                 {
                     var url = await _supabaseStorage.UploadFileAsync(assignment.UploadFile, "assignments");
@@ -75,18 +107,20 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                 }
 
                 await _assignmentRepository.AddAsync(assignment);
-
-                Console.WriteLine($"✅ Đã thêm bài tập '{assignment.Title}' với file: {assignment.UploadedFileUrl}");
                 TempData["SuccessMessage"] = "✅ Thêm bài tập thành công!";
                 return RedirectToAction(nameof(Assignment));
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Lỗi khi thêm bài tập: {ex.Message}");
-                ViewBag.Lessons = (await _lessonRepository.FindAsync()).OrderBy(l => l.Title).ToList(); // ✅ Thêm dòng này
+
+                ViewBag.Lessons = (await _lessonRepository.FindAsync())
+                    .Where(l => l.CourseId == courseId)
+                    .OrderBy(l => l.Title)
+                    .ToList();
+
                 return View("~/Views/Instructor/AssignmentInstructor/AddAssignment.cshtml", assignment);
             }
-
         }
 
         /* =====================================================
@@ -95,9 +129,22 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [HttpGet]
         public async Task<IActionResult> EditAssignment(Guid id)
         {
-            var assignment = await _assignmentRepository.FindByIdAsync(id);
-            if (assignment == null) return NotFound();
-            ViewBag.Lessons = (await _lessonRepository.FindAsync()).OrderBy(l => l.Title).ToList();
+            var redirect = EnsureCourseSelected();
+            if (redirect != null) return redirect;
+
+            var courseId = GetCurrentCourseId()!.Value;
+            var assignment = await _context.Assignments
+                .Include(a => a.Lesson)
+                .FirstOrDefaultAsync(a => a.Id == id);
+            if (assignment == null || assignment.Lesson?.CourseId != courseId)
+                return NotFound();
+
+            ViewBag.Lessons = (await _lessonRepository.FindAsync())
+                .Where(l => l.CourseId == courseId)
+                .OrderBy(l => l.Title)
+                .ToList();
+
+            ViewBag.CourseName = GetCurrentCourseName();
             return View("~/Views/Instructor/AssignmentInstructor/EditAssignment.cshtml", assignment);
         }
 
@@ -120,7 +167,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                 existing.LessonId = assignment.LessonId;
                 existing.ExternalFileUrl = assignment.ExternalFileUrl;
 
-                // ✅ Nếu có file mới → xóa file cũ rồi upload lại
+                // ✅ Nếu có file mới → xóa cũ, upload lại
                 if (assignment.UploadFile != null && assignment.UploadFile.Length > 0)
                 {
                     if (!string.IsNullOrEmpty(existing.UploadedFileUrl))
@@ -133,7 +180,6 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 
                 await _assignmentRepository.UpdateAsync(existing);
 
-                Console.WriteLine($"✏️ Đã cập nhật bài tập '{existing.Title}'");
                 TempData["SuccessMessage"] = "✅ Cập nhật bài tập thành công!";
                 return RedirectToAction(nameof(Assignment));
             }
@@ -160,19 +206,16 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                     await _supabaseStorage.DeleteFileAsync(assignment.UploadedFileUrl);
 
                 await _assignmentRepository.DeleteByIdAsync(id);
-
-                Console.WriteLine($"🗑️ Đã xóa bài tập '{assignment.Title}'");
                 return Json(new { success = true });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Lỗi DeleteAssignment: {ex.Message}");
                 return Json(new { success = false, message = ex.Message });
             }
         }
 
         /* =====================================================
-           🌍 CÔNG KHAI / ẨN BÀI TẬP
+           🌍 CÔNG KHAI / ẨN
         ===================================================== */
         [HttpPost]
         [IgnoreAntiforgeryToken]
@@ -186,8 +229,6 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
             {
                 assignment.IsPublic = !assignment.IsPublic;
                 await _assignmentRepository.UpdateAsync(assignment);
-
-                Console.WriteLine($"🌍 Đã cập nhật công khai: {assignment.Title} = {assignment.IsPublic}");
                 return Json(new { success = true, isPublic = assignment.IsPublic });
             }
             catch (Exception ex)

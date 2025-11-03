@@ -5,28 +5,136 @@
 <link rel="stylesheet" href="~/css/Instructor/Home.css" asp-append-version="true" />
 
 <div class="content-main">
+    <!-- ✅ Thống kê tổng quan -->
     <div class="status">
-        <p>Số khóa học đang dạy :</p>
-        <p>Tổng số bài học đã tạo :</p>
-        <p>Tổng số tài liệu đã đăng :</p>
-        <p>Tổng số bài tập đã giao :</p>
-        <p>Số bài đã chấm / chưa chấm :</p>
+        <!-- 🔹 Các khóa học gần đây -->
+        <div class="d-flex align-items-center justify-content-between mt-4 mb-2">
+            <h5 class="section-title mb-0">
+                <i class="bi bi-mortarboard-fill me-2"></i>Khóa học gần đây
+            </h5>
+            <a asp-controller="CourseInstructor" asp-action="Course" class="btn btn-outline-primary btn-sm">Xem thêm</a>
+        </div>
+
+        <div class="course-row">
+            @if (ViewBag.RecentCourses != null && ((List<Course>)ViewBag.RecentCourses).Any())
+            {
+                foreach (var course in (List<Course>)ViewBag.RecentCourses)
+                {
+                    <div class="card-course">
+                        <h6>@course.Name</h6>
+                        <p><i class="bi bi-people"></i> @(course.Enrollments?.Count ?? 0) học viên</p>
+                        <p><i class="bi bi-clock"></i> 
+                            @course.BeginTime.ToString("dd/MM") - @course.EndTime.ToString("dd/MM")
+                        </p>
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-muted mt-2">Chưa có khóa học nào được xem gần đây 👀</p>
+            }
+        </div>
+
+
+        <!-- 🔹 Lịch tuần này -->
+        <div class="section-header mt-4 mb-3">
+            <h5 class="section-title mb-0">
+                <i class="bi bi-calendar-week me-2"></i>Lịch tuần này
+            </h5>
+            <a asp-controller="CalendarInstructor" asp-action="Calendar" class="btn btn-outline-primary btn-sm"> Xem lịch đầy đủ</a>
+        </div>
+
+
+        <div class="week-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ca</th>
+                        <th>Thứ 2</th>
+                        <th>Thứ 3</th>
+                        <th>Thứ 4</th>
+                        <th>Thứ 5</th>
+                        <th>Thứ 6</th>
+                        <th>Thứ 7</th>
+                        <th>CN</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="time-col">Sáng</td>
+                        <td>Lập trình C#</td>
+                        <td></td>
+                        <td>ASP.NET MVC</td>
+                        <td></td>
+                        <td>Cấu trúc dữ liệu</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="time-col">Chiều</td>
+                        <td></td>
+                        <td>Phân tích hệ thống</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="time-col">Tối</td>
+                        <td></td>
+                        <td></td>
+                        <td>Lập trình hướng đối tượng</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
+
+    <!-- ✅ Cột phải -->
     <div class="right-column">
         <div class="btn-quick">
-            <button class="btn btn-primary">Tạo bài học mới</button>
-            <button class="btn btn-primary">Up tài liệu</button>
-            <button class="btn btn-primary">Tạo bài tập mới</button>
+            <h5 class="section-title mb-2">
+                <i class="bi bi-lightning-fill me-2"></i>Thao tác nhanh
+            </h5>
+            <a asp-controller="LessonInstructor" asp-action="AddLesson" class="btn btn-primary">
+                <i class="bi bi-book me-2"></i>Tạo bài học mới
+            </a>
+            <a asp-controller="MaterialInstructor" asp-action="AddMaterial"class="btn btn-success">
+                <i class="bi bi-file-earmark-arrow-up me-2"></i>Up tài liệu
+            </a>
+            <a asp-controller="AssignmentInstructor" asp-action="AddAssignment"class="btn btn-warning text-white">
+                <i class="bi bi-pencil-square me-2"></i>Tạo bài tập mới
+            </a>
         </div>
+
         <div class="upcoming-events">
             <div class="events-header">
-                <h5>Sắp diễn ra</h5>
-                <a href="#"><i class="bi bi-calendar2-event"></i> Xem lịch</a>
+                <h5><i class="bi bi-calendar-event me-2"></i>Sắp diễn ra</h5>
+                <a asp-controller="CalendarInstructor" asp-action="Calendar" class="btn btn-outline-primary btn-calendar">
+                    <i class="bi bi-calendar2-event"></i> Xem lịch
+                </a>
             </div>
-            <hr>
-            <p>Không có sự kiện nào</p>
+            <hr />
+            <p class="text-muted mb-0">Không có sự kiện nào 🎓</p>
+        </div>
+
+        <div class="endcoming-events">
+            <div class="events-header">
+                <h5><i class="bi bi-hourglass-bottom me-2"></i>Sắp kết thúc</h5>
+                <a asp-controller="CalendarInstructor" asp-action="Calendar" class="btn btn-outline-primary btn-calendar">
+                    <i class="bi bi-calendar2-event"></i> Xem lịch
+                </a>
+            </div>
+            <hr />
+            <p class="text-muted mb-0">Không có khóa học nào sắp kết thúc 🎓</p>
         </div>
     </div>
 </div>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+@section Scripts {
     <script src="~/js/Instructor/Lesson/Lesson.js" asp-append-version="true"></script>
+}

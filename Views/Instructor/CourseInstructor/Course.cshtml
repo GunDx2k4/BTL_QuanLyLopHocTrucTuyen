@@ -1,0 +1,113 @@
+@model IEnumerable<BTL_QuanLyLopHocTrucTuyen.Models.Course>
+
+@{
+    ViewData["Title"] = "Khóa học được giao";
+    Layout = "~/Views/Instructor/Shared/_InstructorLayout.cshtml";
+}
+
+<link rel="stylesheet" href="~/css/Instructor/Course/Course.css" asp-append-version="true" />
+
+<div class="content-main course-page">
+    <!-- Header -->
+    <div class="header-course d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold text-primary mb-0">
+            <i class="bi bi-mortarboard-fill me-2"></i>Khóa học giảng dạy
+        </h4>
+
+        <!-- 🔍 Thanh tìm kiếm & sắp xếp -->
+        <div class="d-flex align-items-center gap-2">
+            <input type="text" id="searchCourse" class="form-control form-control-sm" placeholder="🔍 Tìm kiếm khóa học..." style="width: 220px;">
+            <select id="sortCourse" class="form-select form-select-sm" style="width: 180px;">
+                <option value="recent">Mới nhất</option>
+                <option value="begin">Theo ngày bắt đầu</option>
+                <option value="end">Theo ngày kết thúc</option>
+                <option value="status">Theo trạng thái</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Lưới khóa học -->
+    <div class="course-grid" id="courseGrid">
+        @if (Model != null && Model.Any())
+        {
+            foreach (var course in Model)
+            {
+                var now = DateTime.Now;
+                string statusText;
+                string statusColor;
+
+                if (now < course.BeginTime)
+                {
+                    statusText = "Chưa bắt đầu";
+                    statusColor = "text-secondary";
+                }
+                else if (now >= course.BeginTime && now <= course.EndTime)
+                {
+                    statusText = "Đang diễn ra";
+                    statusColor = "text-success";
+                }
+                else
+                {
+                    statusText = "Đã kết thúc";
+                    statusColor = "text-danger";
+                }
+
+                string headerColor = course.Status switch
+                {
+                    BTL_QuanLyLopHocTrucTuyen.Models.Enums.ScheduleStatus.Active => "bg-blue",
+                    BTL_QuanLyLopHocTrucTuyen.Models.Enums.ScheduleStatus.Completed => "bg-green",
+                    BTL_QuanLyLopHocTrucTuyen.Models.Enums.ScheduleStatus.Planned => "bg-orange",
+                    _ => "bg-blue"
+                };
+
+                <div class="course-card shadow-sm"
+                     data-id="@course.Id"
+                     data-name="@course.Name.ToLower()"
+                     data-desc="@course.Description?.ToLower()"
+                     data-begin="@course.BeginTime.ToString("yyyyMMdd")"
+                     data-end="@course.EndTime.ToString("yyyyMMdd")"
+                     data-created="@course.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss")"
+                     data-status="@statusText">
+                    <div class="course-header @headerColor" style="cursor: pointer;" title="Nhấn để chọn khóa học này 🎓">
+                        <i class="bi bi-journal-bookmark-fill"></i>
+                        <h5 class="title">@course.Name</h5>
+                    </div>
+
+                    <div class="course-body">
+                        <p><i class="bi bi-person-workspace me-2"></i>Giảng viên: <strong>@course.Instructor?.FullName</strong></p>
+                        <p><i class="bi bi-calendar-week me-2"></i>
+                            <strong>@course.BeginTime.ToString("dd/MM/yyyy")</strong> → <strong>@course.EndTime.ToString("dd/MM/yyyy")</strong>
+                        </p>
+                        <p><i class="bi bi-circle-fill @statusColor me-2"></i><span class="fw-semibold">@statusText</span></p>
+                        @if (!string.IsNullOrEmpty(course.Description))
+                        {
+                            <p class="desc mt-2 text-muted">@course.Description</p>
+                        }
+                    </div>
+                    <div class="course-footer">
+                        <a asp-controller="LessonInstructor" asp-action="Lesson" asp-route-courseId="@course.Id" class="btn btn-primary btn-sm">
+                            <i class="bi bi-journal-bookmark me-1"></i>Bài học
+                        </a>
+                        <a asp-controller="MaterialInstructor" asp-action="Material" asp-route-courseId="@course.Id" class="btn btn-success btn-sm">
+                            <i class="bi bi-file-earmark-text me-1"></i>Tài liệu
+                        </a>
+                        <a asp-controller="AssignmentInstructor" asp-action="Assignment" asp-route-courseId="@course.Id" class="btn btn-warning btn-sm text-dark">
+                            <i class="bi bi-pass me-1"></i>Bài tập
+                        </a>
+                        <a asp-controller="StudentInstructor" asp-action="Index" asp-route-courseId="@course.Id" class="btn btn-secondary btn-sm">
+                            <i class="bi bi-people me-1"></i>Học viên
+                        </a>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="text-muted">Hiện tại bạn chưa được giao khóa học nào 🎓</p>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/Instructor/Course/Course.js" asp-append-version="true"></script>
+}

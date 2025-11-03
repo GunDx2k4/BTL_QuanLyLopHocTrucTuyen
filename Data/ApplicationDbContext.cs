@@ -27,7 +27,7 @@ public abstract class ApplicationDbContext : DbContext
             .HasOne(t => t.Owner)
             .WithOne() // Không có navigation ngược trong User
             .HasForeignKey<Tenant>(t => t.OwnerId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.NoAction);
 
         // Cấu hình Tenant - Users (1-nhiều)
         modelBuilder.Entity<User>()
@@ -40,7 +40,7 @@ public abstract class ApplicationDbContext : DbContext
             .HasOne(r => r.Tenant)
             .WithMany(t => t.Roles)
             .HasForeignKey(r => r.TenantId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.NoAction);
 
         modelBuilder.Entity<Course>()
             .HasOne(c => c.Tenant)
@@ -87,12 +87,12 @@ public abstract class ApplicationDbContext : DbContext
 
         // // === COURSE RELATIONSHIPS ===
 
-        // // Course -> Instructor (N:1)
-        // modelBuilder.Entity<Course>()
-        //     .HasOne(c => c.Instructor)
-        //     .WithMany(u => u.InstructedCourses)
-        //     .HasForeignKey(c => c.InstructorId)
-        //     .OnDelete(DeleteBehavior.SetNull); // Instructor bị xóa => khóa học vẫn giữ
+        // Course -> Instructor (N:1)
+        modelBuilder.Entity<Course>()
+            .HasOne(c => c.Instructor)
+            .WithMany(u => u.InstructedCourses)
+            .HasForeignKey(c => c.InstructorId)
+            .OnDelete(DeleteBehavior.NoAction); // Instructor bị xóa => khóa học vẫn giữ
 
         // // Course -> Lessons (1:N)
         // modelBuilder.Entity<Lesson>()
@@ -137,7 +137,7 @@ public abstract class ApplicationDbContext : DbContext
             .HasOne(e => e.User)
             .WithMany(u => u.Enrollments)
             .HasForeignKey(e => e.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.NoAction);
         // // Enrollment -> User (N:1)
         // modelBuilder.Entity<Enrollment>()
         //     .HasOne(e => e.User)

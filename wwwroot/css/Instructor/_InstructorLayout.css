@@ -77,39 +77,56 @@ html, body {
     color: #fff;
 }
 
-/* ===== Header ===== */
+/* ===== Header tổng ===== */
 .header-instructor {
     display: flex;
     align-items: center;
     justify-content: space-between;
     background-color: #ffffff;
-    padding: 12px 20px;
+    padding: 10px 18px;
     margin: 10px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    gap: 10px;
 }
 
+/* ===== Nhóm trái (toggle + breadcrumb) ===== */
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 1;
+    min-width: 0; /* cần để ellipsis hoạt động */
+}
+
+/* Breadcrumb sát toggle */
+.instructor-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 15px;
+    color: #555;
+}
+
+/* Nút toggle */
 #toggleSidebar {
     background-color: #0d6efd;
-    color: white;
+    color: #fff;
     border: none;
     border-radius: 8px;
     padding: 8px 12px;
     transition: all 0.2s ease;
+    flex-shrink: 0;
 }
 #toggleSidebar:hover {
     background-color: #0b5ed7;
     transform: scale(1.05);
 }
 
-.text-nameIns {
-    flex: 1;
-    text-align: right;
-    font-weight: 500;
-    color: #333;
-    margin-right: 15px;
-}
-
+/* Account bên phải */
 #Account-Instructor {
     background-color: #fff;
     border: 1px solid #dee2e6;
@@ -119,6 +136,7 @@ html, body {
     align-items: center;
     gap: 4px;
     transition: background-color 0.2s ease;
+    flex-shrink: 0;
 }
 #Account-Instructor:hover {
     background-color: #eff5fc;
@@ -142,7 +160,7 @@ html, body {
 .main-content .main-body {
     flex: 1;
     display: block;
-    padding: 10px 20px;
+    padding: 0px 12px 8px 12px;
 }
 
 
@@ -180,7 +198,10 @@ html, body {
 }
 
 /* ===== Responsive (mobile) ===== */
+/* ===== Responsive (mobile ≤768px) ===== */
 @media (max-width: 768px) {
+
+    /* ===== Sidebar giữ nguyên hiệu ứng trượt ===== */
     .sidebar {
         position: fixed;
         top: 0;
@@ -200,13 +221,106 @@ html, body {
         opacity: 1;
     }
 
+    /* ===== Header tối ưu cho mobile ===== */
+    .header-instructor {
+        align-items: center;
+        justify-content: flex-start;
+        padding: 8px 12px;
+        margin: 8px;
+        gap: 8px;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    /* Nhóm trái (toggle + breadcrumb) */
+    .header-left {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    #toggleSidebar {
+        padding: 8px 10px;
+        font-size: 16px;
+        border-radius: 6px;
+        width: auto;
+    }
+
+    /* Breadcrumb nằm giữa toggle và account, co giãn gọn */
+    .instructor-breadcrumb {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        font-size: 14px;
+        color: #444;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* Account nhỏ gọn hơn */
+    #Account-Instructor {
+        padding: 6px 10px;
+        border-radius: 30px;
+        font-size: 14px;
+        border: 1px solid #dee2e6;
+        background-color: #fff;
+    }
+
+    /* Dropdown căn chỉnh cho mobile */
+    .dropdown-menu {
+        font-size: 14px;
+        min-width: 160px;
+    }
+
+    /* Main content chiếm trọn không gian còn lại */
     .main-content {
         width: 100%;
         transition: opacity 0.3s ease;
+        padding: 0 8px;
     }
 
+    .main-content .main-body {
+        padding: 8px 6px;
+    }
+
+    /* Khi sidebar mở, làm mờ phần còn lại */
     .instructor-container.sidebar-show .main-content {
         opacity: 0.3;
         pointer-events: none;
+    }
+
+    /* Ẩn scrollbar khi hiển thị overlay */
+    body.sidebar-show {
+        overflow: hidden;
+    }
+}
+
+/* ===== Cực nhỏ (mobile ≤480px) ===== */
+@media (max-width: 480px) {
+    .header-instructor {
+        gap: 6px;
+        padding: 6px 10px;
+        margin: 6px;
+    }
+
+    #toggleSidebar {
+        padding: 6px 8px;
+        font-size: 15px;
+    }
+
+    .instructor-breadcrumb {
+        font-size: 13px;
+        gap: 4px;
+        max-width: 70%;
+        text-align: center;
+    }
+
+    #Account-Instructor {
+        font-size: 13px;
+        padding: 5px 8px;
     }
 }

@@ -37,12 +37,14 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
 
             var sessionId = Guid.NewGuid();
             memoryCache.Set(user.Id, sessionId, TimeSpan.FromMinutes(30));
+            var role = user.Role?.Name ?? "User";
 
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Name, user.FullName),
+                new Claim(ClaimTypes.Role, role),  
                 new Claim("SessionId", sessionId.ToString())
             };
 

@@ -10,25 +10,34 @@
 <div class="content-main">
     <h3><i class="bi bi-pencil-square me-2"></i>Chỉnh sửa bài tập</h3>
 
-    <form id="assignmentForm" method="post" asp-action="EditAssignment" asp-controller="AssignmentInstructor">
+    <form id="assignmentForm" method="post" asp-action="EditAssignment" asp-controller="AssignmentInstructor" enctype="multipart/form-data">
         @Html.AntiForgeryToken()
         @Html.HiddenFor(m => m.Id)
         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-        <!-- ====== CHỌN BÀI HỌC ====== -->
-        <div class="mb-3">
-            <label asp-for="LessonId" class="form-label">Chọn bài học *</label>
-            <select asp-for="LessonId" class="form-select select-lesson">
-                <option value="">-- Chọn bài học --</option>
+        <!-- ====================== CHỌN BÀI HỌC ====================== -->
+        <div class="mb-3 position-relative lesson-search-wrapper">
+            <label class="form-label">Chọn bài học *</label>
+            <div class="input-wrapper position-relative">
+                <input type="text" id="lessonSearch" class="form-control pe-5"
+                    placeholder="Nhập tên bài học để tìm..." autocomplete="off"
+                    value="@Model.Lesson?.Title">
+                <button type="button" id="clearLesson" class="btn-clear" title="Xóa lựa chọn">&times;</button>
+            </div>
+
+            <ul id="lessonDropdown"
+                class="list-group position-absolute w-100 shadow-sm"
+                style="display:none; z-index:1050; max-height:200px; overflow-y:auto;">
                 @foreach (var lesson in ViewBag.Lessons)
                 {
-                    <option value="@lesson.Id" selected="@(lesson.Id == Model.LessonId)">
-                        @lesson.Title
-                    </option>
+                    <li class="list-group-item list-group-item-action @(lesson.Id == Model.LessonId ? "active" : "")"
+                        data-id="@lesson.Id">@lesson.Title</li>
                 }
-            </select>
-            <span asp-validation-for="LessonId" class="text-danger"></span>
+            </ul>
+
+            <input type="hidden" name="LessonId" id="LessonId" value="@Model.LessonId" />
         </div>
+
 
         <!-- ====== TÊN BÀI TẬP ====== -->
         <div class="mb-3">
@@ -56,7 +65,33 @@
             <label asp-for="UploadFile" class="form-label">Tải tệp từ máy (PDF, DOCX, ZIP...)</label>
             <input asp-for="UploadFile" type="file" class="form-control" accept=".pdf,.doc,.docx,.zip,.rar" />
             <span asp-validation-for="UploadFile" class="text-danger"></span>
-            <small class="text-muted">👉 Bạn có thể nhập cả liên kết ngoài và tải tệp từ máy.</small>
+           @if (!string.IsNullOrEmpty(Model.UploadedFileUrl))
+            {
+                var fileExt = System.IO.Path.GetExtension(Model.UploadedFileName)?.ToLower();
+                var iconClass = fileExt switch
+                {
+                    ".pdf" => "bi-file-earmark-pdf text-danger",
+                    ".doc" or ".docx" => "bi-file-earmark-word text-primary",
+                    ".zip" or ".rar" => "bi-file-earmark-zip text-warning",
+                    _ => "bi-file-earmark text-secondary"
+                };
+
+                <div class="current-file mt-3 p-3 border rounded bg-light d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @iconClass fs-4"></i>
+                        <div>
+                            <div class="fw-semibold">@Model.UploadedFileName</div>
+                            <small class="text-muted">Tệp hiện tại đã tải lên</small>
+                        </div>
+                    </div>
+                    <div>
+                        <a href="@Model.UploadedFileUrl" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-box-arrow-up-right"></i> Xem tệp
+                        </a>
+                    </div>
+                </div>
+            }
+
         </div>
 
         <!-- ====== ĐIỂM & LOẠI ====== -->
