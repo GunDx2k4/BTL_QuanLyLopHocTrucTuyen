@@ -1,7 +1,67 @@
-
+// ========================================
+// STUDENT MODULE - COMPLETE JAVASCRIPT WITH AJAX
+// ========================================
 
 const StudentModule = (function () {
     'use strict';
+
+    // ===== API CONFIGURATION =====
+    const API = {
+        baseUrl: '/api/student',
+
+        // Helper to get CSRF token
+        getToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        },
+
+        // Generic fetch wrapper
+        async request(endpoint, options = {}) {
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': this.getToken()
+                },
+                ...options
+            };
+
+            // Don't set Content-Type for FormData
+            if (options.body instanceof FormData) {
+                delete defaultOptions.headers['Content-Type'];
+            }
+
+            const response = await fetch(`${this.baseUrl}${endpoint}`, defaultOptions);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Request failed');
+            }
+
+            return data;
+        },
+
+        // Convenience methods
+        async get(endpoint) {
+            return this.request(endpoint, { method: 'GET' });
+        },
+
+        async post(endpoint, data) {
+            return this.request(endpoint, {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+        },
+
+        async postForm(endpoint, formData) {
+            return this.request(endpoint, {
+                method: 'POST',
+                body: formData
+            });
+        },
+
+        async delete(endpoint) {
+            return this.request(endpoint, { method: 'DELETE' });
+        }
+    };
 
     // ===== NOTIFICATION SYSTEM =====
     const Notification = {
@@ -161,7 +221,6 @@ const StudentModule = (function () {
             overlay.appendChild(modal);
             document.body.appendChild(overlay);
 
-            // Add hover effects
             const confirmBtn = modal.querySelector('.modal-confirm');
             const cancelBtn = modal.querySelector('.modal-cancel');
 
@@ -179,7 +238,6 @@ const StudentModule = (function () {
                 cancelBtn.style.background = 'white';
             });
 
-            // Event handlers
             const close = () => {
                 overlay.style.animation = 'fadeOut 0.2s ease-out';
                 setTimeout(() => overlay.remove(), 200);
@@ -267,7 +325,7 @@ const StudentModule = (function () {
         }
     };
 
-    // ===== COURSE MANAGEMENT =====
+    // ===== COURSE MANAGEMENT WITH AJAX =====
     const CourseManager = {
         async enrollCourse(courseId, courseName) {
             const confirmed = await new Promise((resolve) => {
@@ -285,31 +343,18 @@ const StudentModule = (function () {
             Loading.show('Đang đăng ký khóa học...');
 
             try {
-                const response = await fetch('/Student/EnrollCourse', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        courseId: courseId,
-                        __RequestVerificationToken: document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
-                    })
-                });
+                const result = await API.post('/courses/enroll', { courseId });
 
                 Loading.hide();
+                Notification.success(result.message);
 
-                if (response.ok) {
-                    Notification.success('Đăng ký khóa học thành công!');
-                    setTimeout(() => {
-                        window.location.href = '/Student/MyCourses';
-                    }, 1500);
-                } else {
-                    Notification.error('Bạn đã đăng ký khóa học này rồi!');
-                }
+                setTimeout(() => {
+                    window.location.href = '/Student/MyCourses';
+                }, 1500);
             } catch (error) {
                 Loading.hide();
                 console.error('Enrollment error:', error);
-                Notification.error('Có lỗi xảy ra khi đăng ký khóa học!');
+                Notification.error(error.message || 'Có lỗi xảy ra khi đăng ký khóa học!');
             }
         },
 
@@ -329,36 +374,94 @@ const StudentModule = (function () {
             Loading.show('Đang hủy đăng ký...');
 
             try {
-                const response = await fetch('/Student/DropCourse', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        enrollmentId: enrollmentId,
-                        __RequestVerificationToken: document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
-                    })
-                });
+                const result = await API.post('/courses/drop', { enrollmentId });
 
                 Loading.hide();
+                Notification.success(result.message);
 
-                if (response.ok) {
-                    Notification.success('Hủy đăng ký khóa học thành công!');
-                    setTimeout(() => {
-                        window.location.href = '/Student/MyCourses';
-                    }, 1500);
-                } else {
-                    Notification.error('Không thể hủy đăng ký khóa học!');
-                }
+                setTimeout(() => {
+                    window.location.href = '/Student/MyCourses';
+                }, 1500);
             } catch (error) {
                 Loading.hide();
                 console.error('Drop course error:', error);
-                Notification.error('Có lỗi xảy ra khi hủy đăng ký!');
+                Notification.error(error.message || 'Có lỗi xảy ra khi hủy đăng ký!');
+            }
+        },
+
+        async getAvailableCourses() {
+            try {
+                const result = await API.get('/courses/available');
+                return result.data;
+            } catch (error) {
+                console.error('Get available courses error:', error);
+                Notification.error('Không thể tải danh sách khóa học!');
+                return [];
+            }
+        },
+
+        async renderAvailableCourses(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            Loading.show('Đang tải khóa học...');
+
+            try {
+                const courses = await this.getAvailableCourses();
+                Loading.hide();
+
+                if (courses.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h5>🎉 Bạn đã đăng ký tất cả các khóa học!</h5>
+                                <p class="mb-0">Không có khóa học nào để đăng ký.</p>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = courses.map(course => `
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="card-title mb-0">${course.name}</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text text-muted mb-2">
+                                    <small>👨‍🏫 Giảng viên: ${course.instructorName}</small>
+                                </p>
+                                <p class="card-text mb-3">${course.description || 'Không có mô tả'}</p>
+                                <div class="mb-2">
+                                    <small>📅 Bắt đầu: ${new Date(course.beginTime).toLocaleDateString('vi-VN')}</small>
+                                </div>
+                                <div class="mb-3">
+                                    <small>👥 Đã đăng ký: ${course.enrollmentCount} người</small>
+                                </div>
+                                <button onclick="enrollCourse('${course.id}', '${course.name}')" 
+                                        class="btn btn-success btn-sm w-100">
+                                    ✅ Đăng ký ngay
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                Loading.hide();
+                container.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-danger">
+                            <h5>❌ Lỗi tải dữ liệu</h5>
+                            <p class="mb-0">Không thể tải danh sách khóa học. Vui lòng thử lại!</p>
+                        </div>
+                    </div>
+                `;
             }
         }
     };
 
-    // ===== ASSIGNMENT SUBMISSION =====
+    // ===== ASSIGNMENT MANAGEMENT WITH AJAX =====
     const AssignmentManager = {
         previewFile(input) {
             const file = input.files[0];
@@ -372,7 +475,6 @@ const StudentModule = (function () {
             fileSize.textContent = this.formatFileSize(file.size);
             fileInfo.style.display = 'block';
 
-            // Validate file size (50MB)
             if (file.size > 50 * 1024 * 1024) {
                 Notification.error('File quá lớn! Kích thước tối đa là 50MB.');
                 input.value = '';
@@ -397,7 +499,6 @@ const StudentModule = (function () {
             const file = document.getElementById('file')?.files[0];
             const confirmCheck = document.getElementById('confirmCheck');
 
-            // Validate
             if (!file) {
                 Notification.error('Vui lòng chọn file để nộp!');
                 return false;
@@ -408,7 +509,6 @@ const StudentModule = (function () {
                 return false;
             }
 
-            // Confirm submission
             const confirmed = await new Promise((resolve) => {
                 Modal.show({
                     title: 'Xác nhận nộp bài',
@@ -421,7 +521,6 @@ const StudentModule = (function () {
 
             if (!confirmed) return false;
 
-            // Submit
             const submitBtn = document.getElementById('submitBtn');
             if (submitBtn) {
                 submitBtn.disabled = true;
@@ -432,25 +531,18 @@ const StudentModule = (function () {
 
             try {
                 const formData = new FormData(form);
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    body: formData
-                });
+                const result = await API.postForm('/submissions/submit', formData);
 
                 Loading.hide();
+                Notification.success(result.message);
 
-                if (response.ok) {
-                    Notification.success('Nộp bài tập thành công!');
-                    setTimeout(() => {
-                        window.location.href = '/Student/MySubmissions';
-                    }, 1500);
-                } else {
-                    throw new Error('Submission failed');
-                }
+                setTimeout(() => {
+                    window.location.href = '/Student/MySubmissions';
+                }, 1500);
             } catch (error) {
                 Loading.hide();
                 console.error('Submission error:', error);
-                Notification.error('Có lỗi xảy ra khi nộp bài tập!');
+                Notification.error(error.message || 'Có lỗi xảy ra khi nộp bài tập!');
 
                 if (submitBtn) {
                     submitBtn.disabled = false;
@@ -463,13 +555,116 @@ const StudentModule = (function () {
 
         downloadFile(submissionId) {
             Loading.show('Đang tải file...');
-
             window.location.href = `/Student/DownloadFile/${submissionId}`;
-
             setTimeout(() => {
                 Loading.hide();
                 Notification.success('File đã được tải xuống!');
             }, 2000);
+        },
+
+        async deleteSubmission(submissionId) {
+            const confirmed = await new Promise((resolve) => {
+                Modal.show({
+                    title: 'Xác nhận xóa',
+                    message: 'Bạn có chắc muốn xóa bài nộp này?',
+                    type: 'danger',
+                    onConfirm: () => resolve(true),
+                    onCancel: () => resolve(false)
+                });
+            });
+
+            if (!confirmed) return;
+
+            Loading.show('Đang xóa...');
+
+            try {
+                const result = await API.delete(`/submissions/${submissionId}`);
+                Loading.hide();
+                Notification.success(result.message);
+                setTimeout(() => location.reload(), 1500);
+            } catch (error) {
+                Loading.hide();
+                Notification.error(error.message || 'Không thể xóa bài nộp!');
+            }
+        },
+
+        async getAssignments() {
+            try {
+                const result = await API.get('/assignments');
+                return result.data;
+            } catch (error) {
+                console.error('Get assignments error:', error);
+                Notification.error('Không thể tải danh sách bài tập!');
+                return [];
+            }
+        }
+    };
+
+    // ===== DASHBOARD WITH AJAX =====
+    const DashboardManager = {
+        async loadStats() {
+            try {
+                const result = await API.get('/dashboard');
+                return result.data;
+            } catch (error) {
+                console.error('Get dashboard stats error:', error);
+                return null;
+            }
+        },
+
+        async renderStats(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            Loading.show('Đang tải thống kê...');
+
+            try {
+                const stats = await this.loadStats();
+                Loading.hide();
+
+                if (!stats) {
+                    Notification.error('Không thể tải thống kê!');
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="col-md-3">
+                        <div class="card text-white bg-primary mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Khóa học</h5>
+                                <p class="card-text display-4">${stats.totalCourses}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-success mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Bài tập cần nộp</h5>
+                                <p class="card-text display-4">${stats.pendingAssignments}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-warning mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Bài đã nộp</h5>
+                                <p class="card-text display-4">${stats.totalSubmissions}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-info mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Điểm TB</h5>
+                                <p class="card-text display-4">${stats.averageGrade}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                Loading.hide();
+                Notification.error('Lỗi tải thống kê!');
+            }
         }
     };
 
@@ -500,7 +695,7 @@ const StudentModule = (function () {
             } catch (error) {
                 Loading.hide();
                 console.error('Export error:', error);
-                Notification.warning('Chức năng xuất báo cáo sẽ khả dụng sau khi kết nối Backend!');
+                Notification.warning('Chức năng xuất báo cáo sẽ khả dụng sau!');
             }
         }
     };
@@ -559,7 +754,6 @@ const StudentModule = (function () {
                     100% { transform: rotate(360deg); }
                 }
 
-                /* Smooth transitions for buttons */
                 button {
                     transition: all 0.2s ease !important;
                 }
@@ -592,10 +786,9 @@ const StudentModule = (function () {
         if (warningMsg) Notification.warning(warningMsg.dataset.warningMessage);
         if (infoMsg) Notification.info(infoMsg.dataset.infoMessage);
 
-        console.log('✅ Student Module initialized');
+        console.log('✅ Student Module with AJAX initialized');
     };
 
-    // Auto-initialize on DOM ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
@@ -604,16 +797,18 @@ const StudentModule = (function () {
 
     // ===== PUBLIC API =====
     return {
+        api: API,
         notify: Notification,
         modal: Modal,
         loading: Loading,
         course: CourseManager,
         assignment: AssignmentManager,
+        dashboard: DashboardManager,
         report: ReportManager
     };
 })();
 
-// ===== GLOBAL FUNCTIONS FOR INLINE ONCLICK =====
+// ===== GLOBAL FUNCTIONS =====
 function enrollCourse(courseId, courseName) {
     StudentModule.course.enrollCourse(courseId, courseName);
 }
@@ -626,6 +821,10 @@ function downloadFile(submissionId) {
     StudentModule.assignment.downloadFile(submissionId);
 }
 
+function deleteSubmission(submissionId) {
+    StudentModule.assignment.deleteSubmission(submissionId);
+}
+
 function exportReport(format) {
     StudentModule.report.exportReport(format);
 }
@@ -634,5 +833,4 @@ function previewFile(input) {
     StudentModule.assignment.previewFile(input);
 }
 
-// Make StudentModule globally accessible
 window.StudentModule = StudentModule;
