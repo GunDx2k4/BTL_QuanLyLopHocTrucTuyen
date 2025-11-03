@@ -1,14 +1,19 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BTL_QuanLyLopHocTrucTuyen.Repositories;
+using BTL_QuanLyLopHocTrucTuyen.Models;
 using BTL_QuanLyLopHocTrucTuyen.Services;
 using System.Security.Claims;
 
-namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
+namespace BTL_QuanLyLopHocTrucTuyen.Controllers.Api
 {
+    /// <summary>
+    /// API Controller for AJAX requests from Student Module
+    /// All responses return JSON with standard format
+    /// </summary>
+    [Authorize]
     [ApiController]
     [Route("api/student")]
-    [Authorize]
     public class StudentApiController : ControllerBase
     {
         private readonly IEnrollmentRepository _enrollmentRepo;
@@ -37,69 +42,120 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
             _logger = logger;
         }
 
-        // Helper: Lấy UserId
+        #region Helper Methods
+
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return Guid.TryParse(userIdClaim, out var userId) ? userId : Guid.Empty;
         }
 
-        // ============================================
-        // 1. ENROLL COURSE
-        // POST: api/student/enroll
-        // ============================================
-        [HttpPost("enroll")]
+        private IActionResult ApiSuccess(string message, object? data = null)
+        {
+            return Ok(new
+            {
+                success = true,
+                message,
+                data
+            });
+        }
+
+        private IActionResult ApiError(string message, int statusCode = 400)
+        {
+            return StatusCode(statusCode, new
+            {
+                success = false,
+                message
+            });
+        }
+
+        #endregion
+
+        // ==========================================
+        // COURSE ENROLLMENT ENDPOINTS
+        // ==========================================
+
+        /// <summary>
+        /// POST /api/student/courses/enroll
+        /// Enroll in a course via AJAX
+        /// </summary>
+        [HttpPost("courses/enroll")]
         public async Task<IActionResult> EnrollCourse([FromBody] EnrollCourseRequest request)
         {
             try
             {
-                if (request == null || request.CourseId == Guid.Empty)
-                {
-                    return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ!" });
-                }
-
                 var userId = GetCurrentUserId();
                 if (userId == Guid.Empty)
                 {
-                    return Unauthorized(new { success = false, message = "Bạn cần đăng nhập!" });
+                    return ApiError("Unauthorized", 401);
+                }
+
+                if (request.CourseId == Guid.Empty)
+                {
+                    return ApiError("Course ID is required");
                 }
 
                 var success = await _enrollmentRepo.EnrollCourseAsync(userId, request.CourseId);
 
                 if (success)
                 {
-                    _logger.LogInformation($"User {userId} enrolled in course {request.CourseId}");
-                    return Ok(new
-                    {
-                        success = true,
-                        message = "Đăng ký khóa học thành công!"
-                    });
+                    _logger.LogInformation("User {UserId} enrolled in course {CourseId}",
+                        userId, request.CourseId);
+
+                    return ApiSuccess("Đăng ký khóa học thành công!");
                 }
                 else
                 {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        message = "Bạn đã đăng ký khóa học này rồi!"
-                    });
+                    return ApiError("Bạn đã đăng ký khóa học này rồi!");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error enrolling course");
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "Có lỗi xảy ra: " + ex.Message
-                });
+                _logger.LogError(ex, "Error enrolling in course");
+                return ApiError("Có lỗi xảy ra khi đăng ký khóa học", 500);
             }
         }
 
-        // ============================================
-        // 2. GET AVAILABLE COURSES
-        // GET: api/student/available-courses
-        // ============================================
-        [HttpGet("available-courses")]
+        /// <summary>
+        /// POST /api/student/courses/drop
+        /// Drop a course via AJAX
+        /// </summary>
+        [HttpPost("courses/drop")]
+        public async Task<IActionResult> DropCourse([FromBody] DropCourseRequest request)
+        {
+            try
+            {
+                if (request.EnrollmentId == Guid.Empty)
+                {
+                    return ApiError("Enrollment ID is required");
+                }
+
+                var success = await _enrollmentRepo.DropCourseAsync(request.EnrollmentId);
+
+                if (success)
+                {
+                    _logger.LogInformation("User dropped enrollment {EnrollmentId}",
+                        request.EnrollmentId);
+
+                    return ApiSuccess("Hủy đăng ký khóa học thành công!");
+                }
+                else
+                {
+                    return ApiError("Không thể hủy đăng ký khóa học!");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error dropping course");
+                return ApiError("Có lỗi xảy ra khi hủy đăng ký", 500);
+            }
+        }
+
+        /// <summary>
+        /// GET /api/student/courses/available
+        /// Get available courses for enrollment
+        /// </summary>
+        [HttpGet("courses/available")]
         public async Task<IActionResult> GetAvailableCourses()
         {
             try
@@ -109,200 +165,159 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
 
                 if (user?.TenantId == null)
                 {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        message = "Bạn chưa thuộc tổ chức nào!"
-                    });
+                    return ApiError("Bạn chưa thuộc tổ chức nào!");
                 }
 
-                var courses = await _enrollmentRepo.GetAvailableCoursesAsync(userId, user.TenantId.Value);
+                var courses = await _enrollmentRepo
+                    .GetAvailableCoursesAsync(userId, user.TenantId.Value);
 
-                return Ok(new
+                var courseDtos = courses.Select(c => new
                 {
-                    success = true,
-                    total = courses.Count,
-                    data = courses.Select(c => new
-                    {
-                        id = c.Id,
-                        name = c.Name,
-                        description = c.Description,
-                        instructor = c.Instructor?.FullName,
-                        beginTime = c.BeginTime,
-                        endTime = c.EndTime,
-                        status = c.Status.ToString(),
-                        enrollmentCount = c.Enrollments?.Count ?? 0
-                    })
+                    c.Id,
+                    c.Name,
+                    c.Description,
+                    c.BeginTime,
+                    c.EndTime,
+                    c.Status,
+                    InstructorName = c.Instructor?.FullName ?? "N/A",
+                    EnrollmentCount = c.Enrollments?.Count ?? 0
                 });
+
+                return ApiSuccess("Success", courseDtos);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting available courses");
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "Có lỗi xảy ra!"
-                });
+                return ApiError("Có lỗi xảy ra", 500);
             }
         }
 
-        // ============================================
-        // 3. DROP COURSE
-        // POST: api/student/drop-course/{enrollmentId}
-        // ============================================
-        [HttpPost("drop-course/{enrollmentId}")]
-        public async Task<IActionResult> DropCourse(Guid enrollmentId)
+        // ==========================================
+        // ASSIGNMENT ENDPOINTS
+        // ==========================================
+
+        /// <summary>
+        /// GET /api/student/assignments
+        /// Get all assignments for current student
+        /// </summary>
+        [HttpGet("assignments")]
+        public async Task<IActionResult> GetAssignments()
         {
             try
             {
                 var userId = GetCurrentUserId();
-                var enrollment = await _enrollmentRepo.GetEnrollmentByIdAsync(enrollmentId);
+                var assignments = await _assignmentRepo.GetAssignmentsByStudentIdAsync(userId);
+                var submissions = await _submissionRepo.GetSubmissionsByStudentIdAsync(userId);
 
-                if (enrollment == null)
+                var assignmentDtos = assignments.Select(a => new
                 {
-                    return NotFound(new
-                    {
-                        success = false,
-                        message = "Không tìm thấy đăng ký khóa học!"
-                    });
-                }
+                    a.Id,
+                    a.Title,
+                    a.Description,
+                    a.DueDate,
+                    a.MaxScore,
+                    CourseName = a.Lesson?.Course?.Name ?? "N/A",
+                    InstructorName = a.Lesson?.Course?.Instructor?.FullName ?? "N/A",
+                    IsOverdue = a.DueDate < DateTime.UtcNow,
+                    TimeRemaining = a.DueDate - DateTime.UtcNow,
+                    HasSubmitted = submissions.Any(s => s.AssignmentId == a.Id),
+                    Submission = submissions.FirstOrDefault(s => s.AssignmentId == a.Id)
+                });
 
-                // Kiểm tra quyền
-                if (enrollment.UserId != userId)
-                {
-                    return Forbid();
-                }
-
-                var success = await _enrollmentRepo.DropCourseAsync(enrollmentId);
-
-                if (success)
-                {
-                    _logger.LogInformation($"User {userId} dropped enrollment {enrollmentId}");
-                    return Ok(new
-                    {
-                        success = true,
-                        message = "Hủy đăng ký khóa học thành công!"
-                    });
-                }
-                else
-                {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        message = "Không thể hủy đăng ký!"
-                    });
-                }
+                return ApiSuccess("Success", assignmentDtos);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error dropping course");
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "Có lỗi xảy ra!"
-                });
+                _logger.LogError(ex, "Error getting assignments");
+                return ApiError("Có lỗi xảy ra", 500);
             }
         }
 
-        // ============================================
-        // 4. DOWNLOAD SUBMISSION FILE
-        // GET: api/student/submissions/{id}/download
-        // ============================================
-        [HttpGet("submissions/{id}/download")]
-        public async Task<IActionResult> DownloadSubmission(Guid id)
+        /// <summary>
+        /// GET /api/student/assignments/{id}
+        /// Get assignment details
+        /// </summary>
+        [HttpGet("assignments/{id}")]
+        public async Task<IActionResult> GetAssignment(Guid id)
         {
             try
             {
                 var userId = GetCurrentUserId();
-                var submission = await _submissionRepo.GetSubmissionByIdAsync(id);
+                var assignment = await _assignmentRepo.GetAssignmentByIdAsync(id);
 
-                if (submission == null)
+                if (assignment == null)
                 {
-                    return NotFound(new { success = false, message = "Không tìm thấy bài nộp!" });
+                    return ApiError("Không tìm thấy bài tập!", 404);
                 }
 
-                // Kiểm tra quyền
-                if (submission.StudentId != userId)
+                var submission = await _submissionRepo
+                    .GetSubmissionByStudentAndAssignmentAsync(userId, id);
+
+                var assignmentDto = new
                 {
-                    return Forbid();
-                }
+                    assignment.Id,
+                    assignment.Title,
+                    assignment.Description,
+                    assignment.DueDate,
+                    assignment.MaxScore,
+                    assignment.Type,
+                    CourseName = assignment.Lesson?.Course?.Name ?? "N/A",
+                    InstructorName = assignment.Lesson?.Course?.Instructor?.FullName ?? "N/A",
+                    IsOverdue = assignment.DueDate < DateTime.UtcNow,
+                    TimeRemaining = assignment.DueDate - DateTime.UtcNow,
+                    HasSubmitted = submission != null,
+                    Submission = submission != null ? new
+                    {
+                        submission.Id,
+                        submission.SubmittedAt,
+                        submission.Grade,
+                        submission.FileUrl
+                    } : null
+                };
 
-                if (string.IsNullOrEmpty(submission.FileUrl))
-                {
-                    return NotFound(new { success = false, message = "File không tồn tại!" });
-                }
-
-                var filePath = _fileUploadService.GetPhysicalPath(submission.FileUrl);
-
-                if (!_fileUploadService.FileExists(submission.FileUrl))
-                {
-                    return NotFound(new { success = false, message = "File không tồn tại trên server!" });
-                }
-
-                var memory = new MemoryStream();
-                using (var stream = new FileStream(filePath, FileMode.Open))
-                {
-                    await stream.CopyToAsync(memory);
-                }
-                memory.Position = 0;
-
-                var fileName = Path.GetFileName(filePath);
-                var contentType = "application/octet-stream";
-
-                return File(memory, contentType, fileName);
+                return ApiSuccess("Success", assignmentDto);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error downloading submission");
-                return StatusCode(500, new { success = false, message = "Có lỗi khi tải file!" });
+                _logger.LogError(ex, "Error getting assignment details");
+                return ApiError("Có lỗi xảy ra", 500);
             }
         }
 
-        // ============================================
-        // 5. SUBMIT ASSIGNMENT (AJAX with file)
-        // POST: api/student/submit-assignment
-        // ============================================
-        [HttpPost("submit-assignment")]
-        public async Task<IActionResult> SubmitAssignmentAjax([FromForm] SubmitAssignmentRequest request)
+        // ==========================================
+        // SUBMISSION ENDPOINTS
+        // ==========================================
+
+        /// <summary>
+        /// POST /api/student/submissions/submit
+        /// Submit assignment via AJAX with file upload
+        /// </summary>
+        [HttpPost("submissions/submit")]
+        [RequestSizeLimit(52428800)] // 50MB
+        public async Task<IActionResult> SubmitAssignment([FromForm] SubmitAssignmentRequest request)
         {
             try
             {
                 var userId = GetCurrentUserId();
-
-                if (request.File == null || request.AssignmentId == Guid.Empty)
-                {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        message = "Dữ liệu không hợp lệ!"
-                    });
-                }
 
                 // Validate file
                 var validationError = _fileUploadService.ValidateFile(request.File);
                 if (validationError != null)
                 {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        message = validationError
-                    });
+                    return ApiError(validationError);
                 }
 
                 // Upload file
-                var fileUrl = await _fileUploadService.UploadSubmissionAsync(
-                    request.File,
-                    userId,
-                    request.AssignmentId
-                );
+                var fileUrl = await _fileUploadService
+                    .UploadSubmissionAsync(request.File, userId, request.AssignmentId);
 
-                // Kiểm tra đã nộp chưa
+                // Check existing submission
                 var existingSubmission = await _submissionRepo
                     .GetSubmissionByStudentAndAssignmentAsync(userId, request.AssignmentId);
 
                 if (existingSubmission != null)
                 {
-                    // Nộp lại - Xóa file cũ
+                    // Resubmit - Delete old file
                     if (!string.IsNullOrEmpty(existingSubmission.FileUrl))
                     {
                         await _fileUploadService.DeleteFileAsync(existingSubmission.FileUrl);
@@ -311,21 +326,29 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
                     existingSubmission.FileUrl = fileUrl;
                     existingSubmission.SubmittedAt = DateTime.UtcNow;
 
-                    await _submissionRepo.UpdateSubmissionAsync(existingSubmission);
+                    var updated = await _submissionRepo.UpdateSubmissionAsync(existingSubmission);
 
-                    _logger.LogInformation($"User {userId} resubmitted assignment {request.AssignmentId}");
-
-                    return Ok(new
+                    if (updated)
                     {
-                        success = true,
-                        message = "Nộp lại bài tập thành công!",
-                        submissionId = existingSubmission.Id
-                    });
+                        _logger.LogInformation("User {UserId} resubmitted assignment {AssignmentId}",
+                            userId, request.AssignmentId);
+
+                        return ApiSuccess("Nộp lại bài tập thành công!", new
+                        {
+                            submissionId = existingSubmission.Id,
+                            submittedAt = existingSubmission.SubmittedAt,
+                            fileUrl = existingSubmission.FileUrl
+                        });
+                    }
+                    else
+                    {
+                        return ApiError("Có lỗi khi nộp lại bài tập!");
+                    }
                 }
                 else
                 {
-                    // Nộp lần đầu
-                    var submission = new BTL_QuanLyLopHocTrucTuyen.Models.Submission
+                    // First submission
+                    var submission = new Submission
                     {
                         AssignmentId = request.AssignmentId,
                         StudentId = userId,
@@ -335,33 +358,112 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
 
                     var created = await _submissionRepo.CreateSubmissionAsync(submission);
 
-                    _logger.LogInformation($"User {userId} submitted assignment {request.AssignmentId}");
+                    _logger.LogInformation("User {UserId} submitted assignment {AssignmentId}",
+                        userId, request.AssignmentId);
 
-                    return Ok(new
+                    return ApiSuccess("Nộp bài tập thành công!", new
                     {
-                        success = true,
-                        message = "Nộp bài tập thành công!",
-                        submissionId = created.Id
+                        submissionId = created.Id,
+                        submittedAt = created.SubmittedAt,
+                        fileUrl = created.FileUrl
                     });
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error submitting assignment");
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "Có lỗi xảy ra: " + ex.Message
-                });
+                return ApiError("Có lỗi xảy ra khi nộp bài tập", 500);
             }
         }
 
-        // ============================================
-        // 6. GET STATISTICS
-        // GET: api/student/statistics
-        // ============================================
-        [HttpGet("statistics")]
-        public async Task<IActionResult> GetStatistics()
+        /// <summary>
+        /// GET /api/student/submissions
+        /// Get all submissions for current student
+        /// </summary>
+        [HttpGet("submissions")]
+        public async Task<IActionResult> GetSubmissions()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var submissions = await _submissionRepo.GetSubmissionsByStudentIdAsync(userId);
+
+                var submissionDtos = submissions.Select(s => new
+                {
+                    s.Id,
+                    s.SubmittedAt,
+                    s.Grade,
+                    s.FileUrl,
+                    AssignmentTitle = s.Assignment?.Title ?? "N/A",
+                    CourseName = s.Assignment?.Lesson?.Course?.Name ?? "N/A",
+                    IsGraded = s.Grade.HasValue
+                });
+
+                return ApiSuccess("Success", submissionDtos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting submissions");
+                return ApiError("Có lỗi xảy ra", 500);
+            }
+        }
+
+        /// <summary>
+        /// DELETE /api/student/submissions/{id}
+        /// Delete a submission
+        /// </summary>
+        [HttpDelete("submissions/{id}")]
+        public async Task<IActionResult> DeleteSubmission(Guid id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var submission = await _submissionRepo.GetSubmissionByIdAsync(id);
+
+                if (submission == null)
+                {
+                    return ApiError("Không tìm thấy bài nộp!", 404);
+                }
+
+                if (submission.StudentId != userId)
+                {
+                    return ApiError("Bạn không có quyền xóa bài nộp này!", 403);
+                }
+
+                // Delete file first
+                if (!string.IsNullOrEmpty(submission.FileUrl))
+                {
+                    await _fileUploadService.DeleteFileAsync(submission.FileUrl);
+                }
+
+                var success = await _submissionRepo.DeleteSubmissionAsync(id);
+
+                if (success)
+                {
+                    return ApiSuccess("Xóa bài nộp thành công!");
+                }
+                else
+                {
+                    return ApiError("Không thể xóa bài nộp!");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting submission");
+                return ApiError("Có lỗi xảy ra", 500);
+            }
+        }
+
+        // ==========================================
+        // STATISTICS ENDPOINTS
+        // ==========================================
+
+        /// <summary>
+        /// GET /api/student/dashboard
+        /// Get dashboard statistics
+        /// </summary>
+        [HttpGet("dashboard")]
+        public async Task<IActionResult> GetDashboardStats()
         {
             try
             {
@@ -370,64 +472,95 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
                 var enrollments = await _enrollmentRepo.GetEnrollmentsByUserIdAsync(userId);
                 var assignments = await _assignmentRepo.GetAssignmentsByStudentIdAsync(userId);
                 var submissions = await _submissionRepo.GetSubmissionsByStudentIdAsync(userId);
+                var upcomingAssignments = await _assignmentRepo.GetUpcomingAssignmentsAsync(userId, 7);
                 var avgGrade = await _submissionRepo.GetAverageGradeAsync(userId);
 
-                return Ok(new
+                var pendingCount = assignments.Count(a =>
+                    !submissions.Any(s => s.AssignmentId == a.Id));
+
+                var stats = new
                 {
-                    success = true,
-                    data = new
+                    TotalCourses = enrollments.Count(e =>
+                        e.Status == Models.Enums.EnrollmentStatus.Enrolled),
+                    PendingAssignments = pendingCount,
+                    TotalSubmissions = submissions.Count,
+                    AverageGrade = Math.Round(avgGrade, 1),
+                    UpcomingAssignments = upcomingAssignments.Select(a => new
                     {
-                        totalCourses = enrollments.Count,
-                        activeCourses = enrollments.Count(e => e.Status == BTL_QuanLyLopHocTrucTuyen.Models.Enums.EnrollmentStatus.Enrolled),
-                        totalAssignments = assignments.Count,
-                        pendingAssignments = assignments.Count(a => !submissions.Any(s => s.AssignmentId == a.Id)),
-                        totalSubmissions = submissions.Count,
-                        gradedSubmissions = submissions.Count(s => s.Grade.HasValue),
-                        averageGrade = Math.Round(avgGrade, 1)
-                    }
-                });
+                        a.Id,
+                        a.Title,
+                        a.DueDate,
+                        CourseName = a.Lesson?.Course?.Name ?? "N/A"
+                    })
+                };
+
+                return ApiSuccess("Success", stats);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting statistics");
-                return StatusCode(500, new { success = false, message = "Có lỗi xảy ra!" });
+                _logger.LogError(ex, "Error getting dashboard stats");
+                return ApiError("Có lỗi xảy ra", 500);
             }
         }
 
-        // ============================================
-        // 7. EXPORT REPORT
-        // GET: api/student/reports/export?format=pdf|excel
-        // ============================================
-        [HttpGet("reports/export")]
-        public async Task<IActionResult> ExportReport([FromQuery] string format = "pdf")
+        /// <summary>
+        /// GET /api/student/grades
+        /// Get grade summary
+        /// </summary>
+        [HttpGet("grades")]
+        public async Task<IActionResult> GetGrades()
         {
             try
             {
                 var userId = GetCurrentUserId();
+                var submissions = await _submissionRepo.GetSubmissionsByStudentIdAsync(userId);
 
-                // TODO: Implement PDF/Excel export
-                // Tạm thời return thông báo
+                var gradedSubmissions = submissions.Where(s => s.Grade.HasValue).ToList();
 
-                return Ok(new
+                var gradeStats = new
                 {
-                    success = false,
-                    message = "Chức năng xuất báo cáo đang được phát triển!"
-                });
+                    TotalSubmissions = submissions.Count,
+                    GradedCount = gradedSubmissions.Count,
+                    PendingCount = submissions.Count - gradedSubmissions.Count,
+                    AverageGrade = gradedSubmissions.Any()
+                        ? Math.Round(gradedSubmissions.Average(s => s.Grade!.Value), 1)
+                        : 0,
+                    MaxGrade = gradedSubmissions.Any()
+                        ? Math.Round(gradedSubmissions.Max(s => s.Grade!.Value), 1)
+                        : 0,
+                    MinGrade = gradedSubmissions.Any()
+                        ? Math.Round(gradedSubmissions.Min(s => s.Grade!.Value), 1)
+                        : 0,
+                    Submissions = gradedSubmissions.Select(s => new
+                    {
+                        s.Id,
+                        s.SubmittedAt,
+                        s.Grade,
+                        AssignmentTitle = s.Assignment?.Title ?? "N/A",
+                        CourseName = s.Assignment?.Lesson?.Course?.Name ?? "N/A"
+                    })
+                };
+
+                return ApiSuccess("Success", gradeStats);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error exporting report");
-                return StatusCode(500, new { success = false, message = "Có lỗi xảy ra!" });
+                _logger.LogError(ex, "Error getting grades");
+                return ApiError("Có lỗi xảy ra", 500);
             }
         }
     }
 
-    // ============================================
-    // REQUEST MODELS
-    // ============================================
+    #region Request DTOs
+
     public class EnrollCourseRequest
     {
         public Guid CourseId { get; set; }
+    }
+
+    public class DropCourseRequest
+    {
+        public Guid EnrollmentId { get; set; }
     }
 
     public class SubmitAssignmentRequest
@@ -436,4 +569,6 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers.API
         public IFormFile File { get; set; } = null!;
         public string? Notes { get; set; }
     }
+
+    #endregion
 }

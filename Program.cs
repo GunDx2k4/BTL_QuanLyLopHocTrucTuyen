@@ -138,3 +138,17 @@ app.MapControllerRoute(
     .WithStaticAssets();
 
 app.Run();
+// Add Controllers
+builder.Services.AddControllers()
+    .AddJsonOptions(options => {
+        options.JsonSerializerOptions.PropertyNamingPolicy =
+            System.Text.Json.JsonNamingPolicy.CamelCase;
+    });
+
+// Add Antiforgery
+builder.Services.AddAntiforgery(options => {
+    options.HeaderName = "RequestVerificationToken";
+});
+
+// Map API routes (sau app.MapControllerRoute)
+app.MapControllers();
