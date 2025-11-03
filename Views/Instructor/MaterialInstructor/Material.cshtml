@@ -5,83 +5,89 @@
     Layout = "~/Views/Instructor/Shared/_InstructorLayout.cshtml";
 }
 
-    <link rel="stylesheet" href="~/css/Instructor/Material/Material.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/Instructor/Material/Material.css" asp-append-version="true" />
 
 <div class="content-main">
     <!-- ===== Header ===== -->
-    <div class="header-material">
-        <h4><i class="bi bi-journal-text me-2"></i>Danh sách tài liệu</h4>
+    <div class="header-material d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-journal-text fs-5 text-primary"></i>
+            <h4 class="mb-0">Danh sách tài liệu</h4>
+        </div>
 
-        <div class="header-actions">
+        <div class="header-actions d-flex align-items-center gap-3 flex-wrap">
             <div class="search-box">
-                <i class="bi bi-search"></i>
                 <input type="search" class="search-input" placeholder="Tìm kiếm tài liệu...">
+                <i class="bi bi-search"></i>
             </div>
 
-            <select class="form-select filter-select">
-                <option value="">Tất cả bài học</option>
-                @if (Model != null && Model.Any())
-                {
-                    foreach (var lesson in Model
-                        .Where(m => m.Lesson != null)
-                        .Select(m => m.Lesson)
-                        .Distinct())
-                    {
-                        <option value="@lesson?.Id">@lesson?.Title</option>
-                    }
-                }
-            </select>
-
             <a asp-controller="MaterialInstructor" asp-action="AddMaterial">
-                <button class="btn-add"><i class="bi bi-plus-lg"></i> Thêm tài liệu</button>
+                <button class="btn-add">
+                    <i class="bi bi-plus-lg"></i> Thêm tài liệu
+                </button>
             </a>
         </div>
     </div>
 
     <hr />
 
-    <!-- ===== Danh sách tài liệu ===== -->
-    <div class="lesson-groups">
-        @if (Model != null && Model.Any())
-        {
-            var grouped = Model.GroupBy(m => m.Lesson?.Title ?? "Khác");
-            foreach (var group in grouped)
-            {
-                <div class="lesson-section" data-lesson-id="@group.First().LessonId">
-                    <h6 class="lesson-title">
-                        <i class="bi bi-book-fill me-2 text-primary"></i> @group.Key
-                    </h6>
+    <!-- ===== Group theo Lesson ===== -->
+    @if (Model != null && Model.Any())
+    {
+        var grouped = Model
+            .Where(m => m.Lesson != null)
+            .GroupBy(m => m.Lesson)
+            .OrderBy(g => g.Key.Title);
 
-                    <div class="material-list">
+        <div class="lesson-group-list">
+            @foreach (var group in grouped)
+            {
+                var lesson = group.Key;
+                var lessonId = lesson.Id;
+
+                <div class="lesson-group" data-lesson-id="@lessonId">
+                    <!-- 🔽 Header của nhóm Lesson -->
+                    <div class="lesson-header d-flex align-items-center justify-content-between" data-bs-toggle="collapse" data-bs-target="#lesson-@lessonId">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-chevron-right toggle-icon"></i>
+                            <h5 class="lesson-title mb-0">@group.Key.Title</h5>
+                        </div>
+                        <span class="text-muted small">@group.Count() Tài liệu</span>
+                    </div>
+
+                    <!-- 📚 Danh sách tài liệu -->
+                    <div id="lesson-@lessonId" class="collapse lesson-material-list">
                         @foreach (var m in group)
                         {
-                            <div class="material-card" data-id="@m.Id">
+                            <div class="material-card d-flex justify-content-between align-items-start p-3 border rounded mb-2 shadow-sm"
+                                 data-id="@m.Id">
                                 <div class="material-info">
-                                    <h6 class="material-title">@m.Title</h6>
+                                    <h6 class="material-title fw-semibold">@m.Title</h6>
                                     <p class="material-desc text-muted small mb-1">
                                         @(string.IsNullOrEmpty(m.Description) ? "— Không có mô tả —" : m.Description)
                                     </p>
-                                    <p class="meta small text-secondary">
-                                        <i class="bi bi-calendar-event"></i> @m.UploadedAt.ToString("dd/MM/yyyy")
+                                    <div class="meta small text-secondary">
+                                        <span><i class="bi bi-calendar-event"></i> Ngày đăng: @m.UploadedAt.ToString("dd/MM/yyyy")</span>
                                         &nbsp;·&nbsp;
-                                        <i class="bi bi-person-circle"></i> @(m.Uploader?.FullName ?? "Không rõ")
+                                        <span><i class="bi bi-person-circle"></i> @(m.Uploader?.FullName ?? "Không rõ")</span>
                                         &nbsp;·&nbsp;
-                                        <i class="bi bi-eye"></i>
-                                        <span class="status-text text-@(m.IsPublic ? "success" : "secondary")">
-                                            @(m.IsPublic ? "Công khai" : "Riêng tư")
+                                        <span class="material-status">
+                                            <i class="bi @(m.IsPublic ? "bi-eye text-success" : "bi-eye-slash text-secondary")"></i>
+                                            <span class="status-text text-@(m.IsPublic ? "success" : "secondary")">
+                                                @(m.IsPublic ? "Công khai" : "Riêng tư")
+                                            </span>
                                         </span>
-                                    </p>
+                                    </div>
 
                                 </div>
 
-                                <div class="material-actions">
+                                <div class="material-actions d-flex flex-column align-items-end gap-2">
                                     <div class="d-flex gap-2">
                                         <button class="btn-toggle btn btn-sm @(m.IsPublic ? "btn-success" : "btn-outline-secondary")"
                                                 data-id="@m.Id"
                                                 title="@(m.IsPublic ? "Ẩn tài liệu" : "Công khai tài liệu")">
                                             <i class="bi @(m.IsPublic ? "bi-eye" : "bi-eye-slash")"></i>
                                         </button>
-
 
                                         <a asp-action="EditMaterial" asp-route-id="@m.Id" class="btn btn-sm btn-outline-primary">
                                             <i class="bi bi-pencil"></i>
@@ -91,19 +97,27 @@
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
+
+                                    @if (!string.IsNullOrEmpty(m.UploadedFileUrl))
+                                    {
+                                        <a href="@m.UploadedFileUrl" target="_blank" class="btn btn-sm btn-outline-primary text-decoration-none small ">
+                                            <i class="bi bi-box-arrow-up-right"></i> Xem tệp
+                                        </a>
+                                    }
                                 </div>
                             </div>
                         }
                     </div>
                 </div>
             }
-        }
-        else
-        {
-            <p class="text-center text-muted mt-4">Chưa có tài liệu nào được thêm.</p>
-        }
-    </div>
+        </div>
+    }
+    else
+    {
+        <p class="text-center text-muted mt-4">Chưa có tài liệu nào được thêm.</p>
+    }
 </div>
-@section Scripts{
-<script src="~/js/Instructor/Material/Material.js" asp-append-version="true"></script>
+
+@section Scripts {
+    <script src="~/js/Instructor/Material/Material.js" asp-append-version="true"></script>
 }

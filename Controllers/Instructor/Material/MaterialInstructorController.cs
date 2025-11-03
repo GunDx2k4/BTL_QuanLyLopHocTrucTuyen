@@ -1,21 +1,29 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using BTL_QuanLyLopHocTrucTuyen.Data;
 using BTL_QuanLyLopHocTrucTuyen.Models;
 using BTL_QuanLyLopHocTrucTuyen.Services;
 using BTL_QuanLyLopHocTrucTuyen.Repositories;
-using Microsoft.EntityFrameworkCore;
+using BTL_QuanLyLopHocTrucTuyen.Core.Controllers;
+using System.Security.Claims;
 
 namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 {
     [Route("Instructor/[action]")]
-    public class MaterialInstructorController : Controller
+    public class MaterialInstructorController : BaseInstructorController
     {
+        private readonly ApplicationDbContext _context;
         private readonly IMaterialRepository _materialRepository;
         private readonly ILessonRepository _lessonRepository;
         private readonly SupabaseStorageService _supabaseStorage;
 
-        public MaterialInstructorController(IMaterialRepository materialRepository, ILessonRepository lessonRepository, SupabaseStorageService supabaseStorage)
+        public MaterialInstructorController(
+            ApplicationDbContext context,
+            IMaterialRepository materialRepository,
+            ILessonRepository lessonRepository,
+            SupabaseStorageService supabaseStorage)
         {
+            _context = context;
             _materialRepository = materialRepository;
             _lessonRepository = lessonRepository;
             _supabaseStorage = supabaseStorage;
@@ -27,9 +35,19 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [HttpGet]
         public async Task<IActionResult> Material()
         {
-            var materials = (await _materialRepository.FindAsync())
+            var redirect = EnsureCourseSelected();
+            if (redirect != null) return redirect;
+
+            var courseId = GetCurrentCourseId()!.Value;
+
+            var materials = await _context.Materials
+                .Include(m => m.Lesson)
+                .Include(m => m.Uploader) 
+                .Where(m => m.Lesson != null && m.Lesson.CourseId == courseId)
                 .OrderByDescending(m => m.UploadedAt)
-                .ToList();
+                .ToListAsync();
+
+            ViewBag.CourseName = GetCurrentCourseName();
 
             return View("~/Views/Instructor/MaterialInstructor/Material.cshtml", materials);
         }
@@ -40,7 +58,16 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [HttpGet]
         public async Task<IActionResult> AddMaterial(Guid? lessonId)
         {
-            ViewBag.Lessons = (await _lessonRepository.FindAsync()).OrderBy(l => l.Title).ToList();
+            var redirect = EnsureCourseSelected();
+            if (redirect != null) return redirect;
+
+            var courseId = GetCurrentCourseId()!.Value;
+
+            ViewBag.Lessons = (await _lessonRepository.FindAsync())
+                .Where(l => l.CourseId == courseId)
+                .OrderBy(l => l.Title)
+                .ToList();
+
             var material = new Material { LessonId = lessonId ?? Guid.Empty };
             return View("~/Views/Instructor/MaterialInstructor/AddMaterial.cshtml", material);
         }
@@ -64,6 +91,11 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
             material.Id = Guid.NewGuid();
             material.UploadedAt = DateTime.Now;
 
+            // ✅ Gán người tải lên
+            var instructorIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(instructorIdClaim))
+                material.UploadedBy = Guid.Parse(instructorIdClaim);
+
             try
             {
                 if (material.UploadFile != null && material.UploadFile.Length > 0)
@@ -85,15 +117,30 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
             }
         }
 
+
         /* =====================================================
            ✏️ CHỈNH SỬA TÀI LIỆU
         ===================================================== */
         [HttpGet]
         public async Task<IActionResult> EditMaterial(Guid id)
         {
-            var material = await _materialRepository.FindByIdAsync(id);
-            if (material == null) return NotFound();
-            ViewBag.Lessons = (await _lessonRepository.FindAsync()).OrderBy(l => l.Title).ToList();
+            var redirect = EnsureCourseSelected();
+            if (redirect != null) return redirect;
+
+            var courseId = GetCurrentCourseId()!.Value;
+
+            var material = await _context.Materials
+                .Include(m => m.Lesson)
+                .FirstOrDefaultAsync(m => m.Id == id && m.Lesson!.CourseId == courseId);
+
+            if (material == null)
+                return NotFound();
+
+            ViewBag.Lessons = (await _lessonRepository.FindAsync())
+                .Where(l => l.CourseId == courseId)
+                .OrderBy(l => l.Title)
+                .ToList();
+
             return View("~/Views/Instructor/MaterialInstructor/EditMaterial.cshtml", material);
         }
 
@@ -101,9 +148,6 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditMaterial([FromForm] Material material)
         {
-            Console.WriteLine("===== 🧩 BẮT ĐẦU CẬP NHẬT TÀI LIỆU =====");
-            Console.WriteLine($"📘 Tiêu đề: {material.Title}");
-
             var existing = await _materialRepository.FindByIdAsync(material.Id);
             if (existing == null)
                 return Json(new { success = false, message = "Không tìm thấy tài liệu!" });
@@ -116,14 +160,10 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                 existing.IsPublic = material.IsPublic;
                 existing.ExternalFileUrl = material.ExternalFileUrl;
 
-                // ✅ Nếu có file mới → xóa file cũ rồi upload lại
                 if (material.UploadFile != null && material.UploadFile.Length > 0)
                 {
                     if (!string.IsNullOrEmpty(existing.UploadedFileUrl))
-                    {
-                        Console.WriteLine($"🧹 Xóa file cũ: {existing.UploadedFileUrl}");
                         await _supabaseStorage.DeleteFileAsync(existing.UploadedFileUrl);
-                    }
 
                     var newUrl = await _supabaseStorage.UploadFileAsync(material.UploadFile, "materials");
                     existing.UploadedFileUrl = newUrl;
@@ -131,8 +171,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                 }
 
                 await _materialRepository.UpdateAsync(existing);
-
-                Console.WriteLine($"✅ Đã cập nhật tài liệu '{existing.Title}'");
+                Console.WriteLine($"✏️ Cập nhật tài liệu: {existing.Title}");
                 return Json(new { success = true });
             }
             catch (Exception ex)
@@ -141,7 +180,6 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                 return Json(new { success = false, message = ex.Message });
             }
         }
-
 
         /* =====================================================
            🗑️ XÓA TÀI LIỆU
@@ -159,8 +197,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                     await _supabaseStorage.DeleteFileAsync(material.UploadedFileUrl);
 
                 await _materialRepository.DeleteByIdAsync(id);
-
-                Console.WriteLine($"🗑️ Đã xóa tài liệu '{material.Title}'");
+                Console.WriteLine($"🗑️ Xóa tài liệu: {material.Title}");
                 return Json(new { success = true });
             }
             catch (Exception ex)
@@ -186,7 +223,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                 material.IsPublic = !material.IsPublic;
                 await _materialRepository.UpdateAsync(material);
 
-                Console.WriteLine($"🌍 Đã cập nhật công khai: {material.Title} = {material.IsPublic}");
+                Console.WriteLine($"🌍 Đổi trạng thái công khai: {material.Title} = {material.IsPublic}");
                 return Json(new { success = true, isPublic = material.IsPublic });
             }
             catch (Exception ex)

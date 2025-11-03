@@ -1,59 +1,149 @@
 $(document).ready(function () {
 
+    document.querySelectorAll(".lesson-header").forEach(header => {
+            header.addEventListener("click", () => {
+                header.classList.toggle("active");
+            });
+        });
+
     /* =====================================================
        🔍 TÌM KIẾM BÀI TẬP
     ===================================================== */
     $(".search-input").on("input", function () {
-        const keyword = $(this).val().toLowerCase().trim();
-        $(".assignment-card").each(function () {
-            const title = $(this).find(".assignment-title").text().toLowerCase();
-            const desc = $(this).find(".assignment-desc").text().toLowerCase();
-            $(this).toggle(title.includes(keyword) || desc.includes(keyword));
+        const keyword = removeVietnameseTones($(this).val().toLowerCase().trim());
+
+        if (keyword === "") {
+            $(".lesson-group").show();
+            $(".assignment-card").show();
+            return;
+        }
+
+        $(".lesson-group").each(function () {
+            let matchFound = false;
+            const lessonTitle = removeVietnameseTones($(this).find(".lesson-title").text().toLowerCase());
+
+            $(this).find(".assignment-card").each(function () {
+                const title = removeVietnameseTones($(this).find(".assignment-title").text().toLowerCase());
+
+                const isMatch =
+                    title.includes(keyword) ||
+                    lessonTitle.includes(keyword);
+
+                $(this).toggle(isMatch);
+                if (isMatch) matchFound = true;
+            });
+
+            $(this).toggle(matchFound);
+
+            // ✅ Nếu tìm thấy kết quả trong lesson, tự mở ra
+            if (matchFound) {
+                $(this).find(".lesson-assignment-list").addClass("show").collapse("show");
+                $(this).find(".lesson-header").addClass("active");
+            }
         });
     });
 
+    /* =====================================================
+    🔠 HÀM LOẠI BỎ DẤU TIẾNG VIỆT
+    ===================================================== */
+    function removeVietnameseTones(str) {
+        if (!str) return "";
+        return str
+            .normalize("NFD")                     // tách dấu ra khỏi ký tự
+            .replace(/[\u0300-\u036f]/g, "")      // xóa các dấu thanh
+            .replace(/đ/g, "d").replace(/Đ/g, "D")// thay đ → d
+            .replace(/[^a-zA-Z0-9\s]/g, "");      // loại bỏ ký tự đặc biệt
+    }
 
     /* =====================================================
-       🧭 SẮP XẾP DANH SÁCH BÀI TẬP
-    ===================================================== */
-    $(".sort-select").on("change", function () {
-        const sortType = $(this).val();
-        const assignments = $(".assignment-card").get();
+   🧭 SẮP XẾP DANH SÁCH BÀI TẬP (theo từng Lesson Group)
+===================================================== */
+$(".sort-select").on("change", function () {
+    const sortType = $(this).val();
+
+    // Lặp qua từng nhóm lesson để sắp xếp bài tập riêng trong nhóm đó
+    $(".lesson-group").each(function () {
+        const $lesson = $(this);
+        const assignments = $lesson.find(".assignment-card").get();
 
         assignments.sort((a, b) => {
-            const startA = parseDate($(a).find(".meta span:nth-child(1)").text());
-            const startB = parseDate($(b).find(".meta span:nth-child(1)").text());
+            const createdA = parseDate($(a).find(".assignment-created").data("created"));
+            const createdB = parseDate($(b).find(".assignment-created").data("created"));
+
             const dueA = parseDate($(a).find(".meta span:nth-child(2)").text());
             const dueB = parseDate($(b).find(".meta span:nth-child(2)").text());
             const scoreA = parseInt($(a).find(".meta strong").text()) || 0;
             const scoreB = parseInt($(b).find(".meta strong").text()) || 0;
-            const typeA = $(a).find(".meta span:contains('Loại')").text().toLowerCase();
-            const typeB = $(b).find(".meta span:contains('Loại')").text().toLowerCase();
+
+            const typeA = normalizeType($(a).find(".meta span:contains('Loại')").text());
+            const typeB = normalizeType($(b).find(".meta span:contains('Loại')").text());
 
             switch (sortType) {
-                case "oldest": return startA - startB;
+                case "oldest":   return createdA - createdB;
                 case "deadline": return dueA - dueB;
-                case "type": return typeA.localeCompare(typeB);
-                case "score": return scoreB - scoreA;
-                default: return startB - startA; // newest
+                case "type":     return typeOrder(typeA) - typeOrder(typeB);
+                case "score":    return scoreB - scoreA;
+                default:         return createdB - createdA; // newest
             }
         });
 
-        $(".assignment-list").empty().append(assignments);
+        // Cập nhật lại thứ tự hiển thị trong nhóm
+        $lesson.find(".lesson-assignment-list").empty().append(assignments);
     });
 
-    // 🔹 Hàm chuyển text ngày về kiểu Date
-    function parseDate(text) {
-        const cleaned = text.replace("Bắt đầu:", "").replace("Hạn nộp:", "").trim();
-        const parts = cleaned.split(/[\s/:]/);
-        if (parts.length >= 5) {
-            const [day, month, year, hour, minute] = parts.map(p => parseInt(p, 10));
-            return new Date(year, month - 1, day, hour || 0, minute || 0);
-        }
-        return new Date(cleaned) || new Date(0);
+    // ✅ Hiển thị thông báo nhỏ
+    showToast(`🔄 Đã sắp xếp lại danh sách (${getSortLabel(sortType)})`);
+});
+
+/* =====================================================
+   🔹 Các hàm phụ trợ
+===================================================== */
+function normalizeType(text) {
+    return text.replace("Loại:", "").trim().toLowerCase();
+}
+
+function typeOrder(type) {
+    switch (type) {
+        case "bài thi": return 1;
+        case "bài kiểm tra": return 2;
+        case "bài tập": return 3;
+        default: return 99;
     }
+}
 
+function parseDate(text) {
+    // Loại bỏ tiền tố
+    const cleaned = text
+        .replace("Bắt đầu:", "")
+        .replace("Hạn nộp:", "")
+        .replace("Tạo lúc:", "")
+        .trim();
 
+    // Tách theo ký tự /, :, hoặc khoảng trắng
+    const parts = cleaned.split(/[\s/:]/).filter(Boolean);
+
+    // parts = [dd, MM, yyyy, HH, mm, ss]
+    if (parts.length >= 6) {
+        const [day, month, year, hour, minute, second] = parts.map(p => parseInt(p, 10));
+        return new Date(year, month - 1, day, hour || 0, minute || 0, second || 0);
+    }
+    if (parts.length >= 5) {
+        const [day, month, year, hour, minute] = parts.map(p => parseInt(p, 10));
+        return new Date(year, month - 1, day, hour || 0, minute || 0);
+    }
+    return new Date(cleaned) || new Date(0);
+}
+
+/* 🔹 Hiển thị nhãn sort */
+function getSortLabel(type) {
+    switch (type) {
+        case "oldest": return "Cũ nhất";
+        case "deadline": return "Theo hạn nộp";
+        case "type": return "Theo loại bài tập";
+        case "score": return "Theo điểm tối đa";
+        default: return "Mới nhất";
+    }
+}
     /* =====================================================
        🗑️ XÓA BÀI TẬP (DÙNG EVENT DELEGATION)
     ===================================================== */

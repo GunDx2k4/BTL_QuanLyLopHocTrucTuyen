@@ -1,5 +1,7 @@
+@using System.Security.Claims
 @{
     Layout = null;
+     var courseName = User.FindFirst("CurrentCourseName")?.Value ?? "Khóa học";
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -27,40 +29,60 @@
             <ul class="nav flex-column">
                 <li class="nav-item">
                     <a asp-controller="HomeInstructor" asp-action="Index" class="nav-link">
-                        <i class="bi bi-house-door-fill me-2"></i>Trang chủ
+                        <i class="bi bi-house-door me-2"></i>Trang chủ
                     </a>
                 </li>
+
                 <li class="nav-item">
-                    <a asp-controller="HomeInstructor" asp-action="Home" class="nav-link">
-                        <i class="bi bi-house-door-fill me-2"></i>Khóa học
+                    <a asp-controller="CourseInstructor" asp-action="Course" class="nav-link">
+                        <i class="bi bi-journal-bookmark me-2"></i>Khóa học
                     </a>
                 </li>
                 <hr />
+
                 <li class="nav-item">
                     <a asp-controller="LessonInstructor" asp-action="Lesson" class="nav-link">
-                        <i class="bi bi-journal-bookmark me-2"></i>Bài học
+                        <i class="bi bi-book me-2"></i>Bài học
                     </a>
                 </li>
+
                 <li class="nav-item">
                     <a asp-controller="AssignmentInstructor" asp-action="Assignment" class="nav-link">
-                        <i class="bi bi-pass me-2"></i>Bài tập
+                        <i class="bi bi-clipboard-check me-2"></i>Bài tập
                     </a>
                 </li>
+
                 <li class="nav-item">
                     <a asp-controller="MaterialInstructor" asp-action="Material" class="nav-link">
-                        <i class="bi bi-file-earmark-text-fill me-2"></i>Tài liệu
+                        <i class="bi bi-file-earmark-text me-2"></i>Tài liệu
                     </a>
                 </li>
+
                 <li class="nav-item">
-                    <a asp-controller="StudentInstructor" asp-action="Index" class="nav-link">
+                    <a asp-controller="StudentInstructor" asp-action="Student" class="nav-link">
                         <i class="bi bi-people me-2"></i>Học viên
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a asp-controller="CalendarInstructor" asp-action="Index" class="nav-link">
-                        <i class="bi bi-calendar4-week me-2"></i>Lịch
+                    <a asp-controller="GradeInstructor" asp-action="Grade" class="nav-link">
+                        <i class="bi bi-award me-2"></i>Điểm
                     </a>
                 </li>
+
+                <li class="nav-item">
+                    <a asp-controller="CalendarInstructor" asp-action="Calendar" class="nav-link">
+                        <i class="bi bi-calendar-week me-2"></i>Lịch
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a asp-controller="StatisticInstructor" asp-action="Statistic" class="nav-link">
+                        <i class="bi bi-bar-chart-line me-2"></i>Thống kê
+                    </a>
+                </li>
+
+                <hr class="text-white-50" />
+
                 <li class="nav-item">
                     <a asp-controller="SettingInstructor" asp-action="Index" class="nav-link">
                         <i class="bi bi-gear me-2"></i>Cài đặt
@@ -76,17 +98,19 @@
         <main class="main-content">
             <!-- ===== Header của giảng viên ===== -->
             <div class="header-instructor">
-                <!-- Nút mở/tắt sidebar -->
-                <button id="toggleSidebar" class="btn btn-primary">
-                    <i class="bi bi-layout-sidebar-inset"></i>
-                </button>
-
-                <!-- Chào người dùng -->
-                <div class="text-nameIns">
-                    Xin chào, <strong>@ViewBag.FullName</strong>
+                <!-- Nhóm trái: toggle + breadcrumb -->
+                <div class="header-left d-flex align-items-center">
+                    <button id="toggleSidebar" class="btn btn-primary me-2">
+                        <i class="bi bi-layout-sidebar-inset"></i>
+                    </button>
+                    <div class="instructor-breadcrumb d-flex align-items-center gap-2">
+                        <span class="text-primary fw-semibold">@courseName</span>
+                        <i class="bi bi-chevron-right small text-muted"></i>
+                        <span class="text-muted">@ViewData["Title"]</span>
+                    </div>
                 </div>
 
-                <!-- Nút tài khoản -->
+                <!-- Nhóm phải: account -->
                 <div class="dropdown">
                     <button id="Account-Instructor" class="btn btn-light d-flex align-items-center" data-bs-toggle="dropdown">
                         <span class="material-icons me-1">account_circle</span>
@@ -101,6 +125,7 @@
                 </div>
             </div>
 
+
             <!-- ===== Render nội dung từng trang con ===== -->
             <div class="main-body">
                 @RenderBody()
@@ -110,23 +135,40 @@
 
     <script>
         const logout = (event) => {
-                event.preventDefault();
-                fetch('/api/authen/logout', { method: 'POST' })
-                    .then(response => {
-                        if (response.ok) {
-                            window.location.href = '/home/index';
-                        } else {
-                            alert('Logout failed. Please try again.');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error during logout:', error);
-                        alert('An error occurred. Please try again.');
-                    });
-            };
+            event.preventDefault();
+
+            // 🟡 Kiểm tra nếu trang hiện tại là Add hoặc Edit
+            const currentUrl = window.location.pathname.toLowerCase();
+            const isEditingPage = currentUrl.includes("/add") || currentUrl.includes("/edit");
+
+            if (isEditingPage) {
+                const confirmLogout = confirm("⚠️ Bạn đang ở trang nhập liệu. Nếu thoát, dữ liệu chưa lưu sẽ bị mất.\nBạn có chắc chắn muốn đăng xuất?");
+                if (!confirmLogout) {
+                    return; // ❌ Huỷ logout
+                }
+            }
+
+            // ✅ Gọi API logout
+            fetch('/api/authen/logout', { method: 'POST' })
+                .then(response => {
+                    if (response.ok) {
+                        // Xóa toàn bộ cookie hoặc session lưu course nếu cần
+                        window.location.href = '/Home/Index';
+                    } else {
+                        alert('❌ Đăng xuất thất bại. Vui lòng thử lại!');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error during logout:', error);
+                    alert('⚠️ Đã xảy ra lỗi. Vui lòng thử lại.');
+                });
+        };
     </script>
 
+
     <!-- Bootstrap JS + Custom Script -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
     <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>

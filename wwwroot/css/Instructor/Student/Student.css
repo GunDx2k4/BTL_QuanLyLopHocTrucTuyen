@@ -1,0 +1,68 @@
+.student-page {
+    background: #f8f9fb;
+    padding: 25px;
+    border-radius: 12px;
+}
+
+/* Header */
+.header-student h4 {
+    color: #1b4fd7;
+}
+
+/* Thống kê nhanh */
+.overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: #fff;
+    padding: 18px 20px;
+    border-radius: 12px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+    transition: 0.2s ease;
+}
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 12px rgba(0,0,0,0.12);
+}
+.stat-card i {
+    font-size: 2rem;
+}
+.stat-card .label {
+    margin: 0;
+    font-size: 15px;
+}
+.stat-card .value {
+    font-size: 22px;
+    font-weight: 700;
+}
+.bg-blue { background: #0d6efd; }
+.bg-green { background: #198754; }
+.bg-orange { background: #fd7e14; }
+
+/* Table */
+.table-hover tbody tr:hover {
+    background-color: #eef5ff;
+    transition: 0.2s;
+}
+.table th {
+    font-weight: 600;
+}
+.table td {
+    vertical-align: middle;
+}
+
+/* Filter */
+.filter-bar select {
+    min-width: 180px;
+}
+
+/* Button hover */
+.btn-outline-primary:hover {
+    background: #0d6efd;
+    color: #fff;
+}

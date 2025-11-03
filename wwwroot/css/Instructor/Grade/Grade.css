@@ -1,0 +1,35 @@
+.grade-page {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* Header */
+.header-grade h4 {
+    color: #333;
+}
+.filter-bar select {
+    min-width: 180px;
+}
+
+/* Table */
+.table th {
+    font-weight: 600;
+    white-space: nowrap;
+}
+.table td {
+    vertical-align: middle;
+}
+.table-hover tbody tr:hover {
+    background-color: #eef4ff;
+}
+
+/* Modal */
+.modal-body p {
+    margin-bottom: 8px;
+    font-size: 15px;
+}
+.modal-footer button {
+    border-radius: 6px;
+}

@@ -74,13 +74,68 @@
 }
 
 /* ===== Danh sách theo nhóm bài học ===== */
-.lesson-section {
-    margin-bottom: 30px;
+.lesson-group-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 20px;
 }
-.lesson-title {
-    font-weight: 600;
+
+/* ===== Header của mỗi Lesson ===== */
+.lesson-group {
+    background: #f8fbff;
+    border: 1px solid #dbe3f1;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.25s ease;
+}
+
+.lesson-group:hover {
+    box-shadow: 0 4px 10px rgba(13, 110, 253, 0.08);
+    transform: translateY(-2px);
+}
+
+.lesson-header {
+    background: #e8f1ff;
     color: #0d6efd;
-    margin-bottom: 12px;
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.lesson-header:hover {
+    background-color: #d8e6ff;
+}
+
+.lesson-header .lesson-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.lesson-header .toggle-icon {
+    font-size: 1rem;
+    transition: transform 0.25s ease;
+}
+
+.lesson-header.active .toggle-icon {
+    transform: rotate(90deg);
+}
+/* ===== Danh sách bài tập trong mỗi Lesson ===== */
+.lesson-material-list {
+    background: #ffffff;
+    padding: 14px 20px 18px 20px;
+    border-top: 1px solid #e5e9f2;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.lesson-material-list.show {
+    padding-top: 16px;
 }
 
 /* ===== Material Cards ===== */
@@ -135,13 +190,163 @@
 .btn-delete { background: #dc3545; color: #fff; }
 .material-actions button:hover { opacity: 0.9; transform: scale(1.05); }
 
-/* ===== Responsive ===== */
+/* ===== Responsive (Tablet & Mobile) ===== */
+@media (max-width: 992px) {
+    /* Tablet - giảm padding, co form */
+    .content-main {
+        padding: 20px 24px;
+    }
+
+    .header-assignment h4 {
+        font-size: 18px;
+    }
+
+    .assignment-title {
+        font-size: 16px;
+    }
+
+    .assignment-desc,
+    .meta {
+        font-size: 14px;
+    }
+}
+
 @media (max-width: 768px) {
-    .header-actions {
+    /* ===== Header ===== */
+    .header-assignment {
         flex-direction: column;
         align-items: stretch;
+        gap: 10px;
     }
-    .search-box, .filter-select, .btn-add {
+
+    .header-assignment h4 {
+        text-align: center;
         width: 100%;
+    }
+
+    .header-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .search-box {
+        width: 100%;
+    }
+
+    .search-box input {
+        width: 100%;
+        font-size: 14px;
+        padding: 8px 34px 8px 10px;
+    }
+
+    .sort-select {
+        width: 100%;
+        font-size: 14px;
+        padding: 8px 10px;
+    }
+
+    .btn-add {
+        width: 100%;
+        text-align: center;
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    /* ===== Assignment List ===== */
+    .assignment-list {
+        margin-top: 20px;
+        gap: 12px;
+    }
+
+    .assignment-card {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 16px 18px;
+        gap: 12px;
+    }
+
+    .assignment-info {
+        width: 100%;
+    }
+
+    .meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        font-size: 13.5px;
+    }
+
+    /* ===== Actions ===== */
+    .assignment-actions {
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        border-top: 1px solid #e9ecef;
+        padding-top: 10px;
+        margin-top: 6px;
+    }
+
+    .assignment-actions .buttons {
+        gap: 6px;
+    }
+
+    .assignment-actions .btn {
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+
+    .badge {
+        font-size: 12.5px;
+        padding: 4px 8px;
+        border-radius: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* ===== Mobile nhỏ ===== */
+    .content-main {
+        padding: 15px;
+    }
+
+    .header-assignment h4 {
+        font-size: 16px;
+    }
+
+    .search-box input, 
+    .sort-select {
+        font-size: 13.5px;
+        padding: 7px 30px 7px 10px;
+    }
+
+    .btn-add {
+        font-size: 13.5px;
+        padding: 9px;
+    }
+
+    .assignment-card {
+        padding: 14px 15px;
+    }
+
+    .assignment-title {
+        font-size: 15px;
+    }
+
+    .assignment-desc,
+    .meta {
+        font-size: 13px;
+    }
+
+    .assignment-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .assignment-actions .buttons {
+        width: 100%;
+        justify-content: flex-start;
     }
 }

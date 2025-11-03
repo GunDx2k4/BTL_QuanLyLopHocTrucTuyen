@@ -16,6 +16,21 @@ document.addEventListener('DOMContentLoaded', () => {
         icon.classList.toggle('bi-layout-sidebar-inset-reverse', !isHidden);
         icon.classList.toggle('bi-layout-sidebar-inset', isHidden);
     };
+    // ⚠️ Kiểm tra nếu chưa chọn khóa học (áp dụng cho Lesson / Material / Assignment)
+    const mainContainer = document.querySelector(".content-main");
+    if (mainContainer && mainContainer.dataset.requireCourse === "true") {
+        Swal.fire({
+            icon: "warning",
+            title: "Chưa chọn khóa học!",
+            text: "Vui lòng chọn khóa học trước khi xem nội dung này.",
+            confirmButtonText: "Chọn ngay",
+            confirmButtonColor: "#0d6efd",
+            allowOutsideClick: false
+        }).then(() => {
+            window.location.href = "/Instructor/Course";
+        });
+    }
+
 
     // 🧭 Toggle Sidebar khi nhấn nút
     toggleButton.addEventListener('click', (e) => {

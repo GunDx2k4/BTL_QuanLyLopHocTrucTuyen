@@ -1,0 +1,68 @@
+@{
+    ViewData["Title"] = "Lịch giảng dạy & hạn nộp";
+    Layout = "~/Views/Instructor/Shared/_InstructorLayout.cshtml";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
+<link rel="stylesheet" href="~/css/Instructor/Calendar/Calendar.css" asp-append-version="true" />
+
+<div class="content-main" data-current-course="@ViewBag.CurrentCourseId">
+    <h3><i class="bi bi-calendar3 me-2"></i> Lịch giảng dạy & hạn bài tập</h3>
+
+    <!-- 🔍 Bộ lọc khóa học -->
+    <div class="filter-course mt-3 mb-4 position-relative">
+        <div class="input-wrapper position-relative">
+            <input type="text" id="courseSearch" class="form-control pe-5"
+                   placeholder="Chọn khóa học hoặc nhập tên..." autocomplete="off">
+            <button type="button" id="clearCourse" class="btn-clear" title="Xóa lựa chọn">&times;</button>
+        </div>
+
+        <ul id="courseDropdown"
+            class="list-group position-absolute w-100 shadow-sm"
+            style="display:none; z-index:1050; max-height:220px; overflow-y:auto;">
+            <li class="list-group-item list-group-item-action fw-bold" data-id="all">📚 Tất cả khóa học</li>
+            @foreach (var course in ViewBag.Courses)
+            {
+                <li class="list-group-item list-group-item-action" data-id="@course.Id">@course.Name</li>
+            }
+        </ul>
+    </div>
+
+    <div id="calendar" class="mt-4"></div>
+</div>
+
+
+<!-- 🔹 Modal chi tiết sự kiện -->
+<div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content p-3">
+      <div class="modal-header border-0">
+        <h5 class="modal-title">📘 Chi tiết bài tập</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Tên:</strong> <span id="eventName"></span></p>
+        <p><strong>Loại bài tập:</strong> <span id="eventType"></span></p>
+        <p><strong>Ngày bắt đầu:</strong> <span id="eventStart"></span></p>
+        <p><strong>Ngày kết thúc:</strong> <span id="eventEnd"></span></p>
+        <p><strong>Mô tả:</strong></p>
+        <p id="eventDesc" class="text-muted mb-0"></p>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        <button type="button" id="btnEditAssignment" class="btn btn-primary">
+          ✏️ Sửa bài tập
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+@section Scripts {
+    <script src="~/js/Instructor/Calendar/Calendar.js" asp-append-version="true"></script>
+}

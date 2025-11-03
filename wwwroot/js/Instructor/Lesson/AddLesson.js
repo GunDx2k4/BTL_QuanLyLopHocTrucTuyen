@@ -11,15 +11,16 @@ $(document).ready(function () {
         const form = $(this);
         const url = form.attr("action");
         const data = form.serialize();
+        const token = $('input[name="__RequestVerificationToken"]').val();
 
         $.ajax({
             url: url,
             type: "POST",
             data: data,
+            headers: { 'RequestVerificationToken': token },
             success: function (response) {
-                // Hiển thị thông báo hoặc redirect
                 showToast("✅ Thêm bài học thành công!");
-                window.location.href = "/Instructor/Lesson";
+                setTimeout(() => window.location.href = "/Instructor/Lesson", 800);
             },
             error: function (xhr) {
                 console.error(xhr.responseText);

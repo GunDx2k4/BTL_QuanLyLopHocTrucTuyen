@@ -1,0 +1,65 @@
+.detail-grade {
+    background: #f8f9fb;
+    padding: 25px;
+    border-radius: 12px;
+}
+
+/* Header */
+.header-detail h4 {
+    color: #1b4fd7;
+}
+
+/* Info cards */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 20px;
+}
+.info-card {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    transition: 0.2s ease;
+}
+.info-card:hover {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    transform: translateY(-3px);
+}
+.info-card .card-title {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+}
+
+/* Grade section */
+.grade-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+    padding: 16px;
+}
+.grade-info p {
+    margin-bottom: 8px;
+    font-size: 15px;
+}
+.grade-info .comment {
+    background: #f3f6ff;
+    border-left: 4px solid #1b4fd7;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-style: italic;
+    color: #333;
+}
+
+/* Buttons */
+.action-buttons button {
+    border-radius: 8px;
+    font-weight: 500;
+}
+.action-buttons .btn-primary {
+    background: linear-gradient(90deg, #0d6efd, #39a9ff);
+    border: none;
+}
+.action-buttons .btn-primary:hover {
+    opacity: 0.9;
+}

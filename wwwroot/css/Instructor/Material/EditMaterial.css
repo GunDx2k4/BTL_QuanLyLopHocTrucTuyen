@@ -92,7 +92,6 @@ textarea.form-control:focus,
     box-shadow: 0 0 0 3px rgba(13,110,253,0.25);
 }
 
-
 /* ===== Nút ===== */
 .btn {
     font-weight: 600;
@@ -143,11 +142,97 @@ textarea.form-control:focus,
 }
 
 /* ===== Responsive ===== */
+@media (max-width: 992px) {
+    /* Tablet */
+    .content-main {
+        padding: 25px 30px;
+        width: 100%;
+        margin: 0px auto;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .form-control, 
+    .form-select {
+        font-size: 15px;
+        padding: 9px 11px;
+    }
+
+    .content-main h3 {
+        font-size: 20px;
+    }
+}
+
 @media (max-width: 768px) {
-    .content-main { padding: 25px; }
-    .btn { width: 100%; margin-bottom: 10px; }
+    /* Điện thoại lớn */
+    .content-main {
+        padding: 20px;
+        gap: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+
+    .content-main h3 {
+        font-size: 18px;
+        margin-bottom: 18px;
+    }
+
+    .form-label {
+        font-size: 14px;
+    }
+
+    .form-control, 
+    .form-select {
+        font-size: 14px;
+        padding: 8px 10px;
+    }
+
+    .btn {
+        width: 100%;
+        font-size: 14px;
+        padding: 9px 16px;
+        margin-bottom: 8px;
+    }
+
     .d-flex.justify-content-between {
         flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .text-danger {
+        font-size: 13.5px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Điện thoại nhỏ */
+    .content-main {
+        padding: 15px;
         gap: 10px;
+        border-radius: 8px;
+    }
+
+    .content-main h3 {
+        font-size: 16px;
+        margin-bottom: 14px;
+    }
+
+    .form-label {
+        font-size: 13px;
+    }
+
+    .form-control, 
+    .form-select {
+        font-size: 13px;
+        padding: 7px 9px;
+    }
+
+    .btn {
+        font-size: 13.5px;
+        padding: 8px 14px;
+    }
+
+    .text-danger {
+        font-size: 13px;
     }
 }

@@ -18,19 +18,24 @@
         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
         <!-- ====== CHỌN BÀI HỌC ====== -->
-        <div class="mb-3">
-            <label asp-for="LessonId" class="form-label">Chọn bài học *</label>
-            <select asp-for="LessonId" class="form-select select-lesson">
-                <option value="">-- Chọn bài học --</option>
-                @if (ViewBag.Lessons != null)
+        <div class="mb-3 position-relative lesson-search-wrapper">
+            <label class="form-label">Chọn bài học *</label>
+            <div class="input-wrapper position-relative">
+                <input type="text" id="lessonSearch" class="form-control pe-5"
+                       placeholder="Nhập tên bài học để tìm..." autocomplete="off">
+                <button type="button" id="clearLesson" class="btn-clear" title="Xóa lựa chọn">&times;</button>
+            </div>
+
+            <ul id="lessonDropdown"
+                class="list-group position-absolute w-100 shadow-sm"
+                style="display:none; z-index:1050; max-height:200px; overflow-y:auto;">
+                @foreach (var lesson in ViewBag.Lessons)
                 {
-                    foreach (var lesson in ViewBag.Lessons)
-                    {
-                        <option value="@lesson.Id">@lesson.Title</option>
-                    }
+                    <li class="list-group-item list-group-item-action" data-id="@lesson.Id">@lesson.Title</li>
                 }
-            </select>
-            <span asp-validation-for="LessonId" class="text-danger"></span>
+            </ul>
+
+            <input type="hidden" name="LessonId" id="LessonId" />
         </div>
 
         <!-- ====== TÊN BÀI TẬP ====== -->

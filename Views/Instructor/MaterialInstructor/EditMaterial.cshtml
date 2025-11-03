@@ -16,20 +16,29 @@
 
         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-        <!-- ======= CHỌN BÀI HỌC ======= -->
-        <div class="mb-3">
-            <label asp-for="LessonId" class="form-label">Chọn bài học *</label>
-            <select asp-for="LessonId" class="form-select">
-                <option value="">-- Chọn bài học --</option>
+        <!-- ====================== CHỌN BÀI HỌC ====================== -->
+        <div class="mb-3 position-relative lesson-search-wrapper">
+            <label class="form-label">Chọn bài học *</label>
+            <div class="input-wrapper position-relative">
+                <input type="text" id="lessonSearch" class="form-control pe-5"
+                    placeholder="Nhập tên bài học để tìm..." autocomplete="off"
+                    value="@Model.Lesson?.Title">
+                <button type="button" id="clearLesson" class="btn-clear" title="Xóa lựa chọn">&times;</button>
+            </div>
+
+            <ul id="lessonDropdown"
+                class="list-group position-absolute w-100 shadow-sm"
+                style="display:none; z-index:1050; max-height:200px; overflow-y:auto;">
                 @foreach (var lesson in ViewBag.Lessons)
                 {
-                    <option value="@lesson.Id" selected="@(lesson.Id == Model.LessonId)">
-                        @lesson.Title
-                    </option>
+                    <li class="list-group-item list-group-item-action @(lesson.Id == Model.LessonId ? "active" : "")"
+                        data-id="@lesson.Id">@lesson.Title</li>
                 }
-            </select>
-            <span asp-validation-for="LessonId" class="text-danger"></span>
+            </ul>
+
+            <input type="hidden" name="LessonId" id="LessonId" value="@Model.LessonId" />
         </div>
+
 
         <!-- ======= TÊN TÀI LIỆU ======= -->
         <div class="mb-3">
@@ -60,10 +69,29 @@
 
             @if (!string.IsNullOrEmpty(Model.UploadedFileUrl))
             {
-                <small class="text-muted d-block mt-2">
-                    <i class="bi bi-file-earmark-text"></i> 
-                    Tệp hiện tại: <a href="@Model.UploadedFileUrl" target="_blank">@Model.UploadedFileName</a>
-                </small>
+                var fileExt = System.IO.Path.GetExtension(Model.UploadedFileName)?.ToLower();
+                var iconClass = fileExt switch
+                {
+                    ".pdf" => "bi-file-earmark-pdf text-danger",
+                    ".doc" or ".docx" => "bi-file-earmark-word text-primary",
+                    ".zip" or ".rar" => "bi-file-earmark-zip text-warning",
+                    _ => "bi-file-earmark text-secondary"
+                };
+
+                <div class="current-file mt-3 p-3 border rounded bg-light d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @iconClass fs-4"></i>
+                        <div>
+                            <div class="fw-semibold">@Model.UploadedFileName</div>
+                            <small class="text-muted">Tệp hiện tại đã tải lên</small>
+                        </div>
+                    </div>
+                    <div>
+                        <a href="@Model.UploadedFileUrl" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-box-arrow-up-right"></i> Xem tệp
+                        </a>
+                    </div>
+                </div>
             }
         </div>
 

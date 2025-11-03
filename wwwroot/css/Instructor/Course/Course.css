@@ -1,0 +1,200 @@
+.course-page {
+    background: #f8f9fb;
+    padding: 25px;
+    border-radius: 12px;
+}
+
+/* Header */
+.header-course h4 {
+    color: #1b4fd7;
+}
+#sortCourse {
+    appearance: none; /* ẩn mũi tên mặc định */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: #fff;
+    border: 1px solid #d0d4de;
+    border-radius: 8px;
+    padding: 8px 36px 8px 12px;
+    font-size: 15px;
+    color: #333;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease-in-out;
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg width='14' height='10' viewBox='0 0 14 10' xmlns='http://www.w3.org/2000/svg'><path fill='%23333' d='M7 10L0.937822 0.25H13.0622L7 10Z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center; /* vị trí mũi tên */
+    background-size: 10px;
+}
+
+#sortCourse:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+}
+
+#sortCourse:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
+    background-color: #fff;
+}
+
+/* Dropdown text color khi mở */
+#sortCourse option {
+    padding: 8px;
+    font-size: 15px;
+}
+
+/* ===== Style cho input tìm kiếm đồng bộ với dropdown ===== */
+#searchCourse {
+    border: 1px solid #d0d4de;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 15px;
+    outline: none;
+    transition: all 0.2s ease-in-out;
+}
+
+#searchCourse:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
+}
+
+/* Grid */
+.course-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+    gap: 25px;
+}
+
+/* Card */
+.course-card {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #e3e6ef;
+    transition: 0.25s ease;
+    min-height: 360px; /* ✅ đảm bảo các card có chiều cao đồng đều */
+}
+
+.course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+}
+
+/* Header */
+.course-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    color: #fff;
+}
+.course-header i {
+    font-size: 1.8rem;
+}
+.course-header .title {
+    margin: 0;
+    font-weight: 600;
+    font-size: 17px;
+}
+#searchCourse {
+    border-radius: 8px;
+    padding-left: 10px;
+}
+
+#sortCourse {
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+
+/* Màu nền header */
+.bg-blue { background: #0d6efd; }
+.bg-green { background: #198754; }
+.bg-orange { background: #fd7e14; }
+
+/* Thân */
+.course-body {
+    padding: 15px 20px;
+    color: #555;
+    font-size: 15px;
+    flex: 1;
+}
+.course-body .desc {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Footer */
+.course-footer {
+    margin-top: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-top: 1px solid #eee;
+    background: #f8f9fa;
+}
+.course-footer .btn {
+    flex: 1;
+    font-weight: 500;
+    border-radius: 6px;
+    padding: 6px 10px;
+    text-align: center;
+    min-width: 90px;
+}
+/* ===== Responsive: giao diện điện thoại ===== */
+@media (max-width: 768px) {
+    /* Căn chỉnh header-course */
+    .header-course {
+        flex-direction: column; /* ✅ chuyển từ hàng ngang → dọc */
+        align-items: stretch;
+        gap: 10px;
+        text-align: center;
+    }
+
+    .header-course h4 {
+        font-size: 1.2rem;
+        text-align: center;
+        margin-bottom: 5px;
+    }
+
+    /* Ô tìm kiếm và dropdown chiếm full width */
+    .header-course .d-flex {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        width: 100%;
+    }
+
+    #searchCourse,
+    #sortCourse {
+        width: 100%;
+        font-size: 16px;
+        padding: 10px 12px;
+    }
+
+    /* Grid thu nhỏ cột khi màn hình hẹp */
+    .course-grid {
+        grid-template-columns: 1fr; /* ✅ 1 cột cho mobile */
+        gap: 18px;
+    }
+
+    .course-card {
+        min-height: auto; /* tránh bị cao quá ở mobile */
+    }
+
+    .course-footer {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .course-footer .btn {
+        width: 100%;
+        min-width: unset;
+    }
+}
+

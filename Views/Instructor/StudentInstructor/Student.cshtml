@@ -1,0 +1,168 @@
+@model IEnumerable<BTL_QuanLyLopHocTrucTuyen.Models.Enrollment>
+@using BTL_QuanLyLopHocTrucTuyen.Models.Enums
+
+@{
+    ViewData["Title"] = "Quản lý học viên";
+    Layout = "~/Views/Instructor/Shared/_InstructorLayout.cshtml";
+}
+
+<link rel="stylesheet" href="~/css/Instructor/Student/Student.css" asp-append-version="true" />
+
+<div class="content-main student-page">
+    <!-- 🔹 Header -->
+    <div class="header-student d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold text-primary mb-0">
+            <i class="bi bi-people-fill me-2"></i>Danh sách học viên
+        </h4>
+    </div>
+
+    <!-- 🔹 Bộ lọc -->
+    <div class="filter-bar d-flex flex-wrap gap-2 mb-4">
+        <form method="get" asp-action="Student" asp-controller="StudentInstructor" class="d-flex flex-wrap gap-2">
+            <select name="courseId" class="form-select form-select-sm" style="width:200px;">
+                <option value="">Tất cả khóa học</option>
+                @foreach (var course in ViewBag.Courses)
+                {
+                    <option value="@course.Id" selected="@(ViewBag.SelectedCourseId == course.Id)">
+                        @course.Name
+                    </option>
+                }
+            </select>
+
+            <select name="status" class="form-select form-select-sm" style="width:200px;">
+                <option value="">Tất cả trạng thái</option>
+                <option value="Enrolled" selected="@(ViewBag.SelectedStatus == "Enrolled")">Đang học</option>
+                <option value="Completed" selected="@(ViewBag.SelectedStatus == "Completed")">Hoàn thành</option>
+                <option value="Dropped" selected="@(ViewBag.SelectedStatus == "Dropped")">Nghỉ học</option>
+            </select>
+
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-search"></i> Lọc
+            </button>
+        </form>
+    </div>
+
+    <!-- 🔹 Thống kê nhanh -->
+    <div class="overview-grid mb-4">
+        <div class="stat-card bg-blue">
+            <i class="bi bi-mortarboard-fill"></i>
+            <div>
+                <p class="label">Tổng học viên</p>
+                <h5 class="value">@ViewBag.TotalStudents</h5>
+            </div>
+        </div>
+        <div class="stat-card bg-green">
+            <i class="bi bi-person-check-fill"></i>
+            <div>
+                <p class="label">Đang học</p>
+                <h5 class="value">@ViewBag.ActiveCount</h5>
+            </div>
+        </div>
+        <div class="stat-card bg-orange">
+            <i class="bi bi-person-x-fill"></i>
+            <div>
+                <p class="label">Nghỉ học</p>
+                <h5 class="value">@ViewBag.QuitCount</h5>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔹 Bảng danh sách học viên -->
+    <div class="table-responsive shadow-sm">
+        <table class="table table-hover align-middle">
+            <thead class="table-primary">
+                <tr>
+                    <th>Họ tên</th>
+                    <th>Email</th>
+                    <th>Lớp</th>
+                    <th>Khóa học</th>
+                    <th>Số bài đã nộp</th>
+                    <th>Điểm trung bình</th>
+                    <th>Trạng thái</th>
+                    <th class="text-center">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var e in Model)
+                    {
+                        var student = e.User;
+                        <tr>
+                            <td>@student.FullName</td>
+                            <td>@student.Email</td>
+                            <td>@e.Course?.Name</td>
+                            @* <td>@($"{e.Submissions?.Count(s => s.Status == SubmissionStatus.Submitted) ?? 0}/{e.Submissions?.Count() ?? 0}")</td>
+                            <td>
+                                @if (e.AverageScore.HasValue)
+                                {
+                                    var score = e.AverageScore.Value;
+                                    var badgeClass = score >= 8 ? "bg-success"
+                                        : score >= 5 ? "bg-warning text-dark" : "bg-danger";
+                                    <span class="badge @badgeClass">@score.ToString("0.0")</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">–</span>
+                                }
+                            </td> *@
+                            <td>
+                                @{
+                                    var color = e.Status switch
+                                    {
+                                        EnrollmentStatus.Enrolled => "text-success fw-semibold",
+                                        EnrollmentStatus.Completed => "text-muted",
+                                        EnrollmentStatus.Dropped => "text-danger",
+                                        _ => "text-secondary"
+                                    };
+                                }
+                                @{
+                                    string statusText = "";
+                                    string colorClass = "";
+
+                                    switch (e.Status)
+                                    {
+                                        case EnrollmentStatus.Enrolled:
+                                            statusText = "Đang học";
+                                            colorClass = "text-success fw-semibold";
+                                            break;
+                                        case EnrollmentStatus.Completed:
+                                            statusText = "Hoàn thành";
+                                            colorClass = "text-muted";
+                                            break;
+                                        case EnrollmentStatus.Dropped:
+                                            statusText = "Nghỉ học";
+                                            colorClass = "text-danger";
+                                            break;
+                                        default:
+                                            statusText = "Không rõ";
+                                            colorClass = "text-secondary";
+                                            break;
+                                    }
+                                }
+                                <span class="@colorClass">@statusText</span>
+
+                            </td>
+                            <td class="text-center">
+                                <a asp-controller="StudentInstructor" asp-action="DetailStudent" asp-route-id="@student.Id"
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">Chưa có học viên nào được ghi danh.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/Instructor/Student/Student.js" asp-append-version="true"></script>
+}
