@@ -8,10 +8,11 @@
 <link rel="stylesheet" href="~/css/Instructor/Calendar/Calendar.css" asp-append-version="true" />
 
 <div class="content-main" data-current-course="@ViewBag.CurrentCourseId">
-    <h3><i class="bi bi-calendar3 me-2"></i> Lịch giảng dạy & hạn bài tập</h3>
+    <h3 class="text-primary"><i class="bi bi-calendar3 me-2"></i> Lịch giảng dạy & hạn bài tập</h3>
 
     <!-- 🔍 Bộ lọc khóa học -->
     <div class="filter-course mt-3 mb-4 position-relative">
+        <h4 class="text-search">Khóa học</h4>
         <div class="input-wrapper position-relative">
             <input type="text" id="courseSearch" class="form-control pe-5"
                    placeholder="Chọn khóa học hoặc nhập tên..." autocomplete="off">
@@ -38,12 +39,12 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content p-3">
       <div class="modal-header border-0">
-        <h5 class="modal-title">📘 Chi tiết bài tập</h5>
+        <h5 class="modal-title" id="modalTitle">📘 Chi tiết sự kiện</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <p><strong>Tên:</strong> <span id="eventName"></span></p>
-        <p><strong>Loại bài tập:</strong> <span id="eventType"></span></p>
+        <p><strong>Loại:</strong> <span id="eventType"></span></p>
         <p><strong>Ngày bắt đầu:</strong> <span id="eventStart"></span></p>
         <p><strong>Ngày kết thúc:</strong> <span id="eventEnd"></span></p>
         <p><strong>Mô tả:</strong></p>
@@ -51,13 +52,14 @@
       </div>
       <div class="modal-footer border-0">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-        <button type="button" id="btnEditAssignment" class="btn btn-primary">
-          ✏️ Sửa bài tập
+        <button type="button" id="btnEditEvent" class="btn btn-primary">
+          ✏️ Sửa
         </button>
       </div>
     </div>
   </div>
 </div>
+
 
 
 

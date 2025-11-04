@@ -6,6 +6,8 @@ using BTL_QuanLyLopHocTrucTuyen.Data;
 using BTL_QuanLyLopHocTrucTuyen.Models;
 using BTL_QuanLyLopHocTrucTuyen.Repositories;
 using BTL_QuanLyLopHocTrucTuyen.Core.Controllers;
+using BTL_QuanLyLopHocTrucTuyen.Authorizations;
+using BTL_QuanLyLopHocTrucTuyen.Models.Enums;
 
 namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 {
@@ -61,7 +63,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 
             var allLessons = (await _lessonRepository.FindAsync())
                 .Where(l => l.CourseId == courseId)
-                .OrderBy(l => l.BeginTime)
+                .OrderByDescending(l => l.BeginTime)
                 .ToList();
 
             ViewBag.AllLessons = allLessons;
@@ -108,11 +110,52 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 
             var courseId = GetCurrentCourseId()!.Value;
 
+            // ✅ Lấy ID giảng viên từ khóa học hiện tại
+            var currentCourse = await _courseRepository.FindByIdAsync(courseId);
+            if (currentCourse == null)
+                return Json(new { success = false, message = "❌ Không tìm thấy khóa học hiện tại!" });
+
+            var instructorId = currentCourse.InstructorId;
+
+            // ✅ Lấy tất cả khóa học mà giảng viên này đang dạy
+            var instructorCourses = await _courseRepository.FindAsync();
+            var courseIdsOfInstructor = instructorCourses
+                .Where(c => c.InstructorId == instructorId)
+                .Select(c => c.Id)
+                .ToList();
+
+            // ✅ Kiểm tra trùng giờ trong toàn bộ các bài học của các khóa học đó
+            var existingLesson = (await _lessonRepository.FindAsync())
+                .FirstOrDefault(l =>
+                    l.CourseId.HasValue && courseIdsOfInstructor.Contains(l.CourseId.Value) &&
+                    (
+                        // Trùng thời gian bắt đầu hoặc trong khoảng giao nhau
+                        (lesson.BeginTime >= l.BeginTime && lesson.BeginTime < l.EndTime) ||
+                        (lesson.EndTime > l.BeginTime && lesson.EndTime <= l.EndTime) ||
+                        (lesson.BeginTime <= l.BeginTime && lesson.EndTime >= l.EndTime)
+                    ) &&
+                    l.Id != lesson.Id
+                );
+
+            if (existingLesson != null)
+            {
+                // ⚠️ Nếu trùng với bài học khác của cùng giảng viên
+                return Json(new
+                {
+                    success = false,
+                    message = $"⚠️ Giờ học này trùng với bài học \"{existingLesson.Title}\" " +
+                            $"({existingLesson.BeginTime:HH:mm dd/MM/yyyy} - {existingLesson.EndTime:HH:mm}) " +
+                            $"thuộc khóa học \"{existingLesson.Course?.Name}\"."
+                });
+            }
+
+            // ✅ Nếu không trùng, thêm mới
             lesson.Id = Guid.NewGuid();
             lesson.CourseId = courseId;
             lesson.Status = Models.Enums.ScheduleStatus.Planned;
 
             await _lessonRepository.AddAsync(lesson);
+
             return Json(new { success = true });
         }
 

@@ -11,6 +11,7 @@
     gap: 15px;
     transition: all 0.3s ease;
     height: 100%;
+    margin: 0px auto;
 }
 
 /* Tiêu đề form */

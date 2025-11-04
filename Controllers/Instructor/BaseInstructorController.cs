@@ -1,8 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using BTL_QuanLyLopHocTrucTuyen.Authorizations;
+using BTL_QuanLyLopHocTrucTuyen.Models.Enums;
 
 namespace BTL_QuanLyLopHocTrucTuyen.Core.Controllers
 {
+    
+    [UserPermissionAuthorize(UserPermission.Instructor)]
     public class BaseInstructorController : Controller
     {
         // ✅ Lấy ID khóa học đang chọn

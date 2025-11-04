@@ -1,20 +1,130 @@
+/* ================================
+   📘 Layout tổng thể
+================================ */
 .student-page {
     background: #f8f9fb;
-    padding: 25px;
+    padding: 25px 30px;
     border-radius: 12px;
+    min-height: calc(100vh - 100px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
 }
 
-/* Header */
+/* ================================
+   🔹 Header
+================================ */
 .header-student h4 {
     color: #1b4fd7;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-/* Thống kê nhanh */
+/* ================================
+   🔍 Ô tìm kiếm khóa học
+================================ */
+.filter-course {
+    position: relative;
+    min-width: 260px;
+}
+
+.filter-course .input-wrapper {
+    position: relative;
+}
+
+#courseSearch {
+    border-radius: 12px;
+    border: 1.8px solid #cfd8dc;
+    padding: 10px 38px 10px 14px;
+    font-size: 15px;
+    transition: all 0.25s ease;
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+#courseSearch:focus {
+    border-color: #2196f3;
+    box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.15);
+    outline: none;
+}
+
+/* ❌ Nút clear (x) */
+.btn-clear {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    font-size: 18px;
+    color: #aaa;
+    cursor: pointer;
+    line-height: 1;
+    z-index: 10; /* 🔼 đảm bảo nằm trên input */
+    display: none; /* ban đầu ẩn */
+}
+
+.btn-clear.visible {
+    display: block;
+}
+
+
+.btn-clear:hover {
+    color: #e53935;
+}
+
+#courseSearch:not(:placeholder-shown) + .btn-clear {
+    display: block;
+}
+
+/* ================================
+   📂 Dropdown danh sách khóa học
+================================ */
+#courseDropdown {
+    position: absolute;
+    width: 100%;
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    overflow-y: auto;
+    max-height: 240px;
+    margin-top: 6px;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+#courseDropdown li {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 15px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: all 0.2s;
+}
+
+#courseDropdown li:last-child {
+    border-bottom: none;
+}
+
+#courseDropdown li:hover {
+    background-color: #eef5ff;
+    color: #0d6efd;
+}
+
+#courseDropdown li.active {
+    background: #0d6efd;
+    color: white;
+    font-weight: 600;
+}
+
+/* ================================
+   📊 Thống kê nhanh
+================================ */
 .overview-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 20px;
 }
+
 .stat-card {
     display: flex;
     align-items: center;
@@ -23,46 +133,92 @@
     padding: 18px 20px;
     border-radius: 12px;
     box-shadow: 0 3px 8px rgba(0,0,0,0.08);
-    transition: 0.2s ease;
+    transition: 0.25s ease;
 }
+
 .stat-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 5px 12px rgba(0,0,0,0.12);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.12);
 }
+
 .stat-card i {
     font-size: 2rem;
+    opacity: 0.9;
 }
+
 .stat-card .label {
     margin: 0;
     font-size: 15px;
 }
+
 .stat-card .value {
     font-size: 22px;
     font-weight: 700;
 }
-.bg-blue { background: #0d6efd; }
-.bg-green { background: #198754; }
-.bg-orange { background: #fd7e14; }
 
-/* Table */
-.table-hover tbody tr:hover {
-    background-color: #eef5ff;
-    transition: 0.2s;
+.bg-blue { background: linear-gradient(135deg, #0d6efd, #5393ff); }
+.bg-green { background: linear-gradient(135deg, #198754, #4caf50); }
+.bg-orange { background: linear-gradient(135deg, #fd7e14, #ffb74d); }
+
+/* ================================
+   📋 Bảng danh sách học viên
+================================ */
+.table {
+    border-radius: 10px;
+    overflow: hidden;
+    background: white;
 }
+
 .table th {
     font-weight: 600;
+    background-color: #eef5ff !important;
 }
+
 .table td {
     vertical-align: middle;
+    font-size: 15px;
 }
 
-/* Filter */
+.table-hover tbody tr:hover {
+    background-color: #f0f7ff;
+    transition: 0.2s;
+}
+
+/* ================================
+   🎛️ Bộ lọc trạng thái
+================================ */
 .filter-bar select {
     min-width: 180px;
+    border-radius: 10px;
+    border: 1.8px solid #cfd8dc;
+    transition: all 0.2s ease;
+    background-color: #ffffff;
 }
 
-/* Button hover */
+.filter-bar select:focus {
+    border-color: #2196f3;
+    box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.15);
+    outline: none;
+}
+
+/* ================================
+   🔘 Nút thao tác
+================================ */
+.btn-outline-primary {
+    border-radius: 8px;
+    transition: 0.2s ease;
+}
+
 .btn-outline-primary:hover {
     background: #0d6efd;
     color: #fff;
+    transform: translateY(-1px);
+}
+
+/* ================================
+   ✨ Animation
+================================ */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
 }

@@ -1,3 +1,4 @@
+@model IEnumerable<BTL_QuanLyLopHocTrucTuyen.Models.Submission>
 @{
     ViewData["Title"] = "Quản lý điểm số";
     Layout = "~/Views/Instructor/Shared/_InstructorLayout.cshtml";
@@ -7,29 +8,48 @@
 
 <div class="content-main grade-page">
     <div class="header-grade d-flex justify-content-between align-items-center mb-3">
-        <h4 class="fw-bold"><i class="bi bi-bar-chart-steps me-2"></i>Quản lý điểm số</h4>
+        <h4 class="fw-bold text-primary"><i class="bi bi-bar-chart-steps me-2"></i>Quản lý điểm số</h4>
 
         <!-- Bộ lọc -->
-        <div class="filter-bar d-flex gap-2">
-            <select class="form-select form-select-sm" id="filterCourse">
-                <option selected>Tất cả khóa học</option>
-                <option>Lập trình Web ASP.NET</option>
-                <option>Cơ sở dữ liệu nâng cao</option>
-            </select>
+        <div class="filter-course mt-3 mb-4 position-relative " data-current-course="@ViewBag.CurrentCourseId">
+            <div class="input-wrapper position-relative">
+                <input type="text" id="courseSearch" class="form-control pe-5"
+                    placeholder="Chọn khóa học hoặc nhập tên..." autocomplete="off">
+                <button type="button" id="clearCourse" class="btn-clear" title="Xóa lựa chọn">&times;</button>
+            </div>
 
-            <select class="form-select form-select-sm" id="filterAssignment">
-                <option selected>Tất cả bài tập</option>
-                <option>Bài tập 1 - SQL</option>
-                <option>Bài kiểm tra giữa kỳ</option>
-            </select>
-
-            <select class="form-select form-select-sm" id="filterStatus">
-                <option selected>Tất cả trạng thái</option>
-                <option>Đã chấm</option>
-                <option>Chưa chấm</option>
-            </select>
+            <ul id="courseDropdown"
+                class="list-group position-absolute w-100 shadow-sm"
+                style="display:none; z-index:1050; max-height:220px; overflow-y:auto;">
+                @foreach (var course in ViewBag.Courses)
+                {
+                    <li class="list-group-item list-group-item-action" data-id="@course.Id">@course.Name</li>
+                }
+            </ul>
         </div>
-    </div>
+
+         <!-- Bộ lọc bài tập -->
+        <div class="filter-assignment mt-3 mb-4 position-relative" data-current-assignment="@ViewBag.CurrentAssignmentId">
+            <div class="input-wrapper position-relative">
+                <input type="text" id="assignmentSearch" class="form-control pe-5"
+                    placeholder="Chọn bài tập hoặc nhập tên..." autocomplete="off">
+                <button type="button" id="clearAssignment" class="btn-clear" title="Xóa lựa chọn">&times;</button>
+            </div>
+
+            <ul id="assignmentDropdown"
+                class="list-group position-absolute w-100 shadow-sm"
+                style="display:none; z-index:1050; max-height:220px; overflow-y:auto;">
+                @foreach (var assignment in ViewBag.Assignments)
+                {
+                    <li class="list-group-item list-group-item-action" data-id="@assignment.Id">
+                        @assignment.Title
+                    </li>
+                }
+            </ul>
+        </div>
+
+
+        </div>
 
     <!-- Bảng điểm -->
     <div class="table-responsive">
@@ -45,43 +65,60 @@
                     <th class="text-center">Thao tác</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr>
-                    <td>Nguyễn Văn A</td>
-                    <td>Lập trình Web ASP.NET</td>
-                    <td>Bài tập 1 - Controller</td>
-                    <td><span class="badge bg-success">9.0</span></td>
-                    <td>29/10/2025</td>
-                    <td><span class="text-success fw-semibold">Đã chấm</span></td>
-                    <td class="text-center">
-                        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#gradeDetailModal">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                        <button class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>Trần Thị B</td>
-                    <td>Cơ sở dữ liệu nâng cao</td>
-                    <td>Bài kiểm tra giữa kỳ</td>
-                    <td><span class="badge bg-warning text-dark">Chờ</span></td>
-                    <td>31/10/2025</td>
-                    <td><span class="text-muted">Chưa chấm</span></td>
-                    <td class="text-center">
-                
-                        <a asp-controller="GradeInstructor" asp-action="DetailGrade" class="btn btn-outline-primary btn-sm">
-                            <i class="bi bi-eye"></i>
-                        </a>
-                        <button class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                    </td>
-                </tr>
+            <tbody id="gradeTableBody">
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">Chưa có bài nộp nào.</td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var s in Model)
+                    {
+                        var isGraded = s.Grade.HasValue;
+                        <tr>
+                            <td>@s.Student?.FullName</td>
+                            <td>@s.Assignment?.Lesson?.Course?.Name</td>
+                            <td>@s.Assignment?.Title</td>
+                            <td>
+                                @if (isGraded)
+                                {
+                                    <span class="badge bg-success">@s.Grade</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark">Chờ</span>
+                                }
+                            </td>
+                            <td>@s.SubmittedAt.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                @if (isGraded)
+                                {
+                                    <span class="text-success fw-semibold">Đã chấm</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Chưa chấm</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <a asp-action="DetailGrade" asp-route-id="@s.Id" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <button class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
             </tbody>
         </table>
     </div>
 </div>
+@section Scripts {
+    <script src="~/js/Instructor/Grade/Grade.js" asp-append-version="true"></script>
+}
 
 

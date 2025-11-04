@@ -4,11 +4,13 @@ using System.Security.Claims;
 using BTL_QuanLyLopHocTrucTuyen.Data;
 using BTL_QuanLyLopHocTrucTuyen.Models;
 using BTL_QuanLyLopHocTrucTuyen.Models.Enums;
+using BTL_QuanLyLopHocTrucTuyen.Core.Controllers;
+
 
 namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 {
     [Route("Instructor/[action]")]
-    public class StudentInstructorController : Controller
+    public class StudentInstructorController : BaseInstructorController
     {
         private readonly ApplicationDbContext _context;
 
@@ -23,25 +25,32 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
             var instructorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (instructorId == null)
                 return Redirect("/Home/Login");
+            var redirect = EnsureCourseSelected();
+            if (redirect != null) return redirect;
+            // ✅ Nếu không truyền courseId thì lấy từ Claim
+            if (!courseId.HasValue)
+            {
+                var courseIdClaim = User.FindFirst("CurrentCourseId")?.Value;
+                if (!string.IsNullOrEmpty(courseIdClaim))
+                    courseId = Guid.Parse(courseIdClaim);
+            }
 
-            // ✅ Lấy danh sách khóa học của giảng viên
             var courses = await _context.Courses
                 .Where(c => c.InstructorId.ToString() == instructorId)
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
 
             ViewBag.Courses = courses;
-            ViewBag.SelectedCourseId = courseId;
+            ViewBag.CurrentCourseId = courseId;
+            ViewBag.CurrentCourseName = courses.FirstOrDefault(c => c.Id == courseId)?.Name ?? "Tất cả khóa học";
             ViewBag.SelectedStatus = status;
 
-            // ✅ Lấy danh sách học viên đăng ký khóa học của giảng viên
             var enrollments = _context.Enrollments
                 .Include(e => e.User)
                 .Include(e => e.Course)
                 .Where(e => e.Course.InstructorId.ToString() == instructorId)
                 .AsQueryable();
 
-            // ✅ Lọc theo Course và Status
             if (courseId.HasValue && courseId != Guid.Empty)
                 enrollments = enrollments.Where(e => e.CourseId == courseId);
 
@@ -94,12 +103,13 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
             }).ToList();
 
             // ✅ Thống kê nhanh
-            ViewBag.TotalStudents = students.Count;
-            ViewBag.ActiveCount = students.Count(s => s.Status == EnrollmentStatus.Enrolled);
-            ViewBag.QuitCount   = students.Count(s => s.Status == EnrollmentStatus.Dropped);
-            ViewBag.Students = students;
+            var list = await enrollments.ToListAsync();
+            ViewBag.TotalStudents = list.Count;
+            ViewBag.ActiveCount = list.Count(e => e.Status == EnrollmentStatus.Enrolled);
+            ViewBag.QuitCount = list.Count(e => e.Status == EnrollmentStatus.Dropped);
 
-            return View("~/Views/Instructor/StudentInstructor/Student.cshtml");
+
+            return View("~/Views/Instructor/StudentInstructor/Student.cshtml",list);
         }
 
         [HttpGet]

@@ -8,7 +8,7 @@
     <!-- ✅ Thống kê tổng quan -->
     <div class="status">
         <!-- 🔹 Các khóa học gần đây -->
-        <div class="d-flex align-items-center justify-content-between mt-4 mb-2">
+        <div class="d-flex align-items-center justify-content-between  ">
             <h5 class="section-title mb-0">
                 <i class="bi bi-mortarboard-fill me-2"></i>Khóa học gần đây
             </h5>
@@ -60,36 +60,38 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td class="time-col">Sáng</td>
-                        <td>Lập trình C#</td>
-                        <td></td>
-                        <td>ASP.NET MVC</td>
-                        <td></td>
-                        <td>Cấu trúc dữ liệu</td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td class="time-col">Chiều</td>
-                        <td></td>
-                        <td>Phân tích hệ thống</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td class="time-col">Tối</td>
-                        <td></td>
-                        <td></td>
-                        <td>Lập trình hướng đối tượng</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
+                    @foreach (var session in new[] { "Sáng", "Chiều", "Tối" })
+                    {
+                        <tr>
+                            <td class="time-col">@session</td>
+                            @foreach (var day in new[] { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "CN" })
+                            {
+                                var lessons = ((Dictionary<string, Dictionary<string, List<Lesson>>>)ViewBag.WeekSchedule)[day][session];
+                                if (lessons.Count > 0)
+                                {
+                                    <td>
+                                        @foreach (var lesson in lessons)
+                                        {
+                                            <a href="#"
+                                            class="lesson-item d-block text-decoration-none p-1 rounded event-item-hover"
+                                            data-type="lesson"
+                                            data-courseid="@lesson.CourseId">
+                                                <strong>@lesson.Title</strong><br />
+                                                <small class="text-muted">
+                                                    @lesson.BeginTime.ToString("HH:mm") - @lesson.EndTime.ToString("HH:mm")
+                                                </small><br />
+                                                <span class="text-primary small">(@lesson.Course?.Name)</span>
+                                            </a>
+                                        }
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td class="text-muted text-center">—</td>
+                                }
+                            }
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
@@ -112,29 +114,149 @@
             </a>
         </div>
 
+        <!-- 🔹 Sự kiện sắp diễn ra -->
         <div class="upcoming-events">
             <div class="events-header">
-                <h5><i class="bi bi-calendar-event me-2"></i>Sắp diễn ra</h5>
+                <h5><i class="bi bi-calendar-event me-2"></i>Sắp diễn ra hôm nay</h5>
                 <a asp-controller="CalendarInstructor" asp-action="Calendar" class="btn btn-outline-primary btn-calendar">
                     <i class="bi bi-calendar2-event"></i> Xem lịch
                 </a>
             </div>
             <hr />
-            <p class="text-muted mb-0">Không có sự kiện nào 🎓</p>
+
+            @if ((ViewBag.UpcomingLessons?.Count > 0)
+                || (ViewBag.UpcomingTests?.Count > 0)
+                || (ViewBag.UpcomingExams?.Count > 0))
+            {
+                <ul class="list-unstyled mb-0">
+                    @foreach (var l in ViewBag.UpcomingLessons)
+                    {
+                        <li class="mb-2">
+                            <a href="#"
+                            class="event-item text-decoration-none d-flex align-items-center event-item-hover"
+                            data-type="lesson" data-courseid="@l.CourseId">
+                                <i class="bi bi-journal-bookmark me-2 text-primary"></i>
+                                <span><strong>@l.Title</strong> — @l.BeginTime.ToString("HH:mm")</span>
+                            </a>
+                        </li>
+                    }
+
+
+                    @if (ViewBag.UpcomingTests?.Count > 0)
+                    {
+                        <li class="fw-bold mt-2 text-info">📘 Bài kiểm tra:</li>
+                        @foreach (var a in ViewBag.UpcomingTests)
+                        {
+                            <li class="mb-2 ms-3">
+                                <a href="#" class="event-item text-decoration-none d-flex align-items-center event-item-hover"
+                                data-type="assignment" data-courseid="@a.Lesson?.CourseId">
+                                    <i class="bi bi-pencil-square me-2 text-info"></i>
+                                    <span><strong>@a.Title</strong> — @a.AvailableFrom?.ToString("HH:mm")</span>
+                                </a>
+                            </li>
+                        }
+                    }
+
+                    @if (ViewBag.UpcomingExams?.Count > 0)
+                    {
+                        <li class="fw-bold mt-2 text-danger">🧭 Bài thi:</li>
+                        @foreach (var a in ViewBag.UpcomingExams)
+                        {
+                            <li class="mb-2 ms-3">
+                                <a href="#" class="event-item text-decoration-none d-flex align-items-center event-item-hover"
+                                data-type="assignment" data-courseid="@a.Lesson?.CourseId">
+                                    <i class="bi bi-clipboard2-check me-2 text-danger"></i>
+                                    <span><strong>@a.Title</strong> — @a.AvailableFrom?.ToString("HH:mm")</span>
+                                </a>
+                            </li>
+                        }
+                    }
+                </ul>
+            }
+            else
+            {
+                <p class="text-muted mb-0">Không có sự kiện nào sắp diễn ra 🎓</p>
+            }
         </div>
 
-        <div class="endcoming-events">
+
+
+        <!-- 🔹 Sự kiện sắp kết thúc -->
+        <div class="endcoming-events mt-4">
             <div class="events-header">
-                <h5><i class="bi bi-hourglass-bottom me-2"></i>Sắp kết thúc</h5>
+                <h5><i class="bi bi-hourglass-bottom me-2"></i>Sắp kết thúc hôm nay</h5>
                 <a asp-controller="CalendarInstructor" asp-action="Calendar" class="btn btn-outline-primary btn-calendar">
                     <i class="bi bi-calendar2-event"></i> Xem lịch
                 </a>
             </div>
             <hr />
-            <p class="text-muted mb-0">Không có khóa học nào sắp kết thúc 🎓</p>
+
+            @if ((ViewBag.EndingLessons?.Count > 0)
+                || (ViewBag.EndingTests?.Count > 0)
+                || (ViewBag.EndingExams?.Count > 0))
+            {
+                <ul class="list-unstyled mb-0">
+                    @foreach (var l in ViewBag.EndingLessons)
+                    {
+                        <li class="mb-2">
+                            <a href="#"
+                            class="event-item text-decoration-none d-flex align-items-center event-item-hover"
+                            data-type="lesson"
+                            data-courseid="@l.CourseId">
+                                <i class="bi bi-journal-check me-2 text-warning"></i>
+                                <span><strong>@l.Title</strong> — kết thúc lúc @l.EndTime.ToString("HH:mm")</span>
+                            </a>
+                        </li>
+                    }
+
+                   
+
+                    @if (ViewBag.EndingTests?.Count > 0)
+                    {
+                        <li class="fw-bold mt-2 text-info">📘 Bài kiểm tra:</li>
+                        @foreach (var a in ViewBag.EndingTests)
+                        {
+                                Console.WriteLine($"{a.Title} | {a.Type} | From {a.AvailableFrom} | Until {a.AvailableUntil}");
+
+                            <li class="mb-2 ms-3">
+                                <a href="#"
+                                class="event-item text-decoration-none d-flex align-items-center event-item-hover"
+                                data-type="assignment" data-courseid="@a.Lesson?.CourseId">
+                                    <i class="bi bi-pencil-square me-2 text-info"></i>
+                                    <span><strong>@a.Title</strong> — hạn @a.AvailableUntil?.ToString("HH:mm")</span>
+                                </a>
+                            </li>
+                        }
+                    }
+
+                    @if (ViewBag.EndingExams?.Count > 0)
+                    {
+                        <li class="fw-bold mt-2 text-danger">🧭 Bài thi:</li>
+                        @foreach (var a in ViewBag.EndingExams)
+                        {
+                                Console.WriteLine($"{a.Title} | {a.Type} | From {a.AvailableFrom} | Until {a.AvailableUntil}");
+
+                            <li class="mb-2 ms-3">
+                                <a href="#"
+                                class="event-item text-decoration-none d-flex align-items-center event-item-hover"
+                                data-type="assignment" data-courseid="@a.Lesson?.CourseId">
+                                    <i class="bi bi-clipboard2-check me-2 text-danger"></i>
+                                    <span><strong>@a.Title</strong> — hạn @a.AvailableUntil?.ToString("HH:mm")</span>
+                                </a>
+                            </li>
+                        }
+                    }
+                </ul>
+            }
+            else
+            {
+                <p class="text-muted mb-0">Không có sự kiện nào sắp kết thúc 🎓</p>
+            }
         </div>
+
+
     </div>
 </div>
 @section Scripts {
-    <script src="~/js/Instructor/Lesson/Lesson.js" asp-append-version="true"></script>
+    <script src="~/js/Instructor/Home/Home.js" asp-append-version="true"></script>
 }

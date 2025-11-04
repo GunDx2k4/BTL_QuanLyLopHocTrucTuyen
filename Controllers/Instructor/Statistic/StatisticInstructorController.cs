@@ -2,11 +2,12 @@ using Microsoft.AspNetCore.Mvc;
 using BTL_QuanLyLopHocTrucTuyen.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using BTL_QuanLyLopHocTrucTuyen.Core.Controllers;
 
 namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 {
     [Route("Instructor/[action]")]
-    public class StatisticInstructorController : Controller
+    public class StatisticInstructorController : BaseInstructorController
     {
         private readonly ApplicationDbContext _context;
 
@@ -22,7 +23,8 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
             var instructorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (instructorId == null)
                 return Redirect("/Home/Login");
-
+            var redirect = EnsureCourseSelected();
+            if (redirect != null) return redirect;
             // ✅ Lấy khóa học hiện tại trong Claim (nếu có)
             var courseIdClaim = User.FindFirst("CurrentCourseId")?.Value;
 

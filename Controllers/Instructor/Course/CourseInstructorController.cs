@@ -5,14 +5,13 @@ using System.Security.Claims;
 using BTL_QuanLyLopHocTrucTuyen.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-
+using BTL_QuanLyLopHocTrucTuyen.Core.Controllers;
 
 
 namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 {
-    [Authorize(Roles = "Instructor")]  // ✅ Chỉ giảng viên được phép vào
     [Route("Instructor/[action]")]
-    public class CourseInstructorController : Controller
+    public class CourseInstructorController : BaseInstructorController
     {
         private readonly ApplicationDbContext _context;
 
