@@ -6,19 +6,20 @@
 <link rel="stylesheet" href="~/css/Instructor/Statistic/Statistic.css" asp-append-version="true" />
 
 <div class="content-main statistic-page">
+
     <!-- 🔹 HEADER -->
     <div class="header-statistic d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <h4 class="fw-bold text-primary mb-0">
-            <i class="bi bi-bar-chart-line-fill me-2"></i>
-            Thống kê học viên & bài tập
+            <i class="bi bi-bar-chart-line-fill me-2"></i>Thống kê học viên & bài tập
             <small class="text-muted">(@ViewBag.CurrentCourseName)</small>
         </h4>
 
+        <!-- Bộ lọc khóa học -->
         <div class="filter-course position-relative" style="min-width:260px;">
             <div class="input-wrapper position-relative">
                 <input type="text" id="courseSearch" class="form-control pe-5"
-                       placeholder="Tìm hoặc chọn khóa học..." autocomplete="off"
-                       value="@ViewBag.CurrentCourseName">
+                       placeholder="Tìm hoặc chọn khóa học..."
+                       value="@ViewBag.CurrentCourseName" autocomplete="off">
                 <button type="button" id="clearCourse" class="btn-clear" title="Xóa lựa chọn">&times;</button>
             </div>
 
@@ -35,63 +36,94 @@
     </div>
 
     <!-- 🔹 THỐNG KÊ TỔNG QUAN -->
-    <div class="overview-grid">
+    <div class="overview-grid mb-4">
         <div class="stat-card bg-gradient-primary">
             <i class="bi bi-journal-code"></i>
             <div>
                 <p class="label">Khóa học đang dạy</p>
-                <h5 class="value">@ViewBag.Courses?.Count</h5>
+                <h5 class="value">@ViewBag.CourseCount</h5>
             </div>
         </div>
         <div class="stat-card bg-gradient-success">
             <i class="bi bi-person-check-fill"></i>
             <div>
                 <p class="label">Sinh viên đã nộp bài</p>
-                <h5 class="value">92</h5>
+                <h5 class="value">@ViewBag.SubmittedCount</h5>
             </div>
         </div>
         <div class="stat-card bg-gradient-warning">
             <i class="bi bi-hourglass-split"></i>
             <div>
                 <p class="label">Chưa nộp bài</p>
-                <h5 class="value">28</h5>
+                <h5 class="value">@ViewBag.NotSubmittedCount</h5>
             </div>
         </div>
         <div class="stat-card bg-gradient-danger">
             <i class="bi bi-exclamation-triangle-fill"></i>
             <div>
-                <p class="label">Bài bị trễ hạn</p>
-                <h5 class="value">6</h5>
+                <p class="label">Bài nộp trễ hạn</p>
+                <h5 class="value">@ViewBag.LateCount</h5>
             </div>
         </div>
     </div>
 
-    <!-- 🔹 BIỂU ĐỒ -->
-    <div class="chart-section mt-5">
-        <div class="row g-4">
-            <div class="col-lg-7">
-                <div class="chart-card p-4 shadow-sm rounded-3">
-                    <h6 class="fw-bold text-secondary mb-3">
-                        <i class="bi bi-bar-chart-line me-2"></i>Số lượng học viên nộp bài theo từng bài tập
-                    </h6>
-                    <canvas id="submissionChart" height="250"></canvas>
-                </div>
-            </div>
+    <!-- 🔹 BẢNG CHI TIẾT THỐNG KÊ -->
+    <div class="table-section mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold text-secondary mb-0">
+                <i class="bi bi-list-ul me-2"></i>Chi tiết bài tập trong khóa học
+            </h5>
+        </div>
 
-            <div class="col-lg-5">
-                <div class="chart-card p-4 shadow-sm rounded-3">
-                    <h6 class="fw-bold text-secondary mb-3">
-                        <i class="bi bi-pie-chart-fill me-2"></i>Tỷ lệ nộp bài / chưa nộp
-                    </h6>
-                    <canvas id="rateChart" height="250"></canvas>
-                </div>
-            </div>
+        <div class="table-responsive shadow-sm rounded-3">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 40%">Bài tập</th>
+                        <th class="text-center">Đã nộp</th>
+                        <th class="text-center">Chưa nộp</th>
+                        <th class="text-center">Nộp trễ</th>
+                        <th class="text-center">Điểm trung bình</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var stats = ViewBag.AssignmentStats as IEnumerable<dynamic>;
+                    }
+                    @if (stats == null || !stats.Any())
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-4">Chưa có bài tập trong khóa học này.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var a in stats)
+                        {
+                            <tr>
+                                <td><i class="bi bi-file-earmark-text me-2 text-primary"></i>@a.Title</td>
+                                <td class="text-center text-success fw-semibold">@a.Submitted</td>
+                                <td class="text-center text-secondary">@a.NotSubmitted</td>
+                                <td class="text-center text-danger">@a.Late</td>
+                                <td class="text-center">
+                                    @if (a.AvgGrade > 0)
+                                    {
+                                        <span class="badge bg-info text-dark">@a.AvgGrade.ToString("0.0")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">–</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+
+                </tbody>
+            </table>
         </div>
     </div>
-    
+
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="~/js/Instructor/Statistic/Statistic.js" asp-append-version="true"></script>
 }

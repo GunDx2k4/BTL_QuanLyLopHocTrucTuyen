@@ -6,9 +6,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const pageContainer = document.querySelector(".content-main");
 
     let currentCourseId = pageContainer.dataset.currentCourse || "all";
-    let currentAssignmentId = null;
+    let currentEventId = null;
+    let currentEventType = null;
 
-    // 🔹 Hiển thị mặc định tên khóa học đang chọn
+    // ======= HIỂN THỊ MẶC ĐỊNH =======
     if (currentCourseId !== "all") {
         const currentLi = courseDropdown.querySelector(`[data-id='${currentCourseId}']`);
         if (currentLi) courseInput.value = currentLi.textContent.trim();
@@ -16,68 +17,68 @@ document.addEventListener("DOMContentLoaded", function () {
         courseInput.value = "📚 Tất cả khóa học";
     }
 
-    // ======= KHỞI TẠO CALENDAR =======
+    // ======= KHỞI TẠO FULLCALENDAR =======
     const calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: "dayGridMonth",
-    locale: "vi",
-    headerToolbar: {
-        left: "prev,next today",
-        center: "title",
-        right: "dayGridMonth,timeGridWeek,timeGridDay"
-    },
-    buttonText: { today: "Hôm nay", month: "Tháng", week: "Tuần", day: "Ngày" },
+        initialView: "dayGridMonth",
+        locale: "vi",
+        headerToolbar: {
+            left: "prev,next today",
+            center: "title",
+            right: "dayGridMonth,timeGridWeek,timeGridDay"
+        },
+        buttonText: {
+            today: "Hôm nay",
+            month: "Tháng",
+            week: "Tuần",
+            day: "Ngày"
+        },
 
-    // ======= LOAD SỰ KIỆN =======
-    events: function (fetchInfo, successCallback, failureCallback) {
-        let url = "/Instructor/GetEvents";
-        if (currentCourseId !== "all") url += `?courseId=${currentCourseId}`;
+        // ======= LOAD SỰ KIỆN =======
+        events: function (fetchInfo, successCallback, failureCallback) {
+            let url = "/Instructor/GetEvents";
+            if (currentCourseId !== "all") url += `?courseId=${currentCourseId}`;
 
-        fetch(url)
-            .then(res => res.json())
-            .then(data => {
-                const truncateTitle = (text, limit = 40) =>
-                    text.length > limit ? text.slice(0, limit) + "..." : text;
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    const truncateTitle = (text, limit = 40) =>
+                        text.length > limit ? text.slice(0, limit) + "..." : text;
 
-                // 🔹 Bảng màu cho từng loại
-                const colorMap = {
-                    "Bài học": "#0d6efd",       // xanh dương
-                    "Bài kiểm tra": "#fd7e14", // cam
-                    "Bài thi": "#dc3545"       // đỏ
-                };
+                    const colorMap = {
+                        "Bài học": "#0d6efd",
+                        "Bài kiểm tra": "#fd7e14",
+                        "Bài thi": "#dc3545"
+                    };
 
-                const events = data
-                    // 🧹 Chỉ giữ lại 3 loại cần hiển thị
-                    .filter(ev =>
-                        ev.type === "Bài học" ||
-                        ev.type === "Bài kiểm tra" ||
-                        ev.type === "Bài thi"
-                    )
-                    // 🧩 Map thành event cho FullCalendar
-                    .map(ev => {
-                        const color = colorMap[ev.type] || "#6c757d";
+                    const events = data
+                        .filter(ev =>
+                            ev.type === "Bài học" ||
+                            ev.type === "Bài kiểm tra" ||
+                            ev.type === "Bài thi"
+                        )
+                        .map(ev => {
+                            const color = colorMap[ev.type] || "#6c757d";
+                            return {
+                                id: ev.id,
+                                title: truncateTitle(ev.title, 22),
+                                start: ev.type === "Bài học"
+                                    ? ev.start
+                                    : new Date(ev.end).toISOString().split("T")[0],
+                                end: ev.type === "Bài học" ? ev.end : null,
+                                extendedProps: {
+                                    description: ev.description,
+                                    realStart: ev.start,
+                                    realEnd: ev.end,
+                                    type: ev.type
+                                },
+                                color,
+                                textColor: "#fff"
+                            };
+                        });
 
-                        return {
-                            id: ev.id,
-                            title: truncateTitle(ev.title, 22),
-                            // 🔸 Bài học hiển thị theo thời lượng, bài thi/kiểm tra hiển thị ở ngày kết thúc
-                            start: ev.type === "Bài học"
-                                ? ev.start
-                                : new Date(ev.end).toISOString().split("T")[0],
-                            end: ev.type === "Bài học" ? ev.end : null,
-                            extendedProps: {
-                                description: ev.description,
-                                realStart: ev.start,
-                                realEnd: ev.end,
-                                type: ev.type
-                            },
-                            color,
-                            textColor: "#fff"
-                        };
-                    });
-
-                successCallback(events);
-            })
-            .catch(failureCallback);
+                    successCallback(events);
+                })
+                .catch(failureCallback);
         },
 
         eventDisplay: "block",
@@ -85,7 +86,6 @@ document.addEventListener("DOMContentLoaded", function () {
         // ======= CLICK HIỂN THỊ CHI TIẾT =======
         eventClick: function (info) {
             const props = info.event.extendedProps;
-
             document.getElementById("eventName").innerText = info.event.title;
             document.getElementById("eventType").innerText = props.type || "Không xác định";
             document.getElementById("eventStart").innerText =
@@ -93,55 +93,111 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById("eventEnd").innerText =
                 props.realEnd ? new Date(props.realEnd).toLocaleString("vi-VN") : "Không có";
             document.getElementById("eventDesc").innerText = props.description || "Không có mô tả";
-
-            // Cập nhật title modal
             document.getElementById("modalTitle").innerText =
                 props.type === "Bài học" ? "📘 Chi tiết bài học" : "📄 Chi tiết bài tập";
 
-            // Lưu thông tin để xử lý nút sửa
             currentEventId = info.event.id;
             currentEventType = props.type;
-
             new bootstrap.Modal(document.getElementById("eventModal")).show();
         }
     });
 
     calendar.render();
 
-    // ======= LỌC KHÓA HỌC =======
-    courseInput.addEventListener("focus", () => (courseDropdown.style.display = "block"));
-    courseInput.addEventListener("input", function () {
-        const keyword = this.value.toLowerCase();
+   // =====================================================
+    // 🔍 Dropdown: Tìm kiếm & Chọn khóa học — Fix hoàn chỉnh
+    // =====================================================
+
+    // 🧱 Thêm item "Không tìm thấy"
+    const noResultItem = document.createElement("li");
+    noResultItem.className = "list-group-item text-muted text-center fst-italic";
+    noResultItem.textContent = "Không tìm thấy khóa học nào";
+    noResultItem.style.display = "none";
+    courseDropdown.appendChild(noResultItem);
+
+    // 🔸 Hàm lọc danh sách
+    function filterCourseItems(keyword) {
+        const lowerKeyword = keyword.toLowerCase().trim();
+        let visibleCount = 0;
+
         courseDropdown.querySelectorAll("li").forEach(li => {
+            if (li === noResultItem) return;
             const text = li.textContent.toLowerCase();
-            li.style.display = text.includes(keyword) ? "block" : "none";
+            const match = text.includes(lowerKeyword);
+            li.style.display = match ? "block" : "none";
+            if (match) visibleCount++;
         });
+
+        noResultItem.style.display = visibleCount === 0 ? "block" : "none";
+        courseDropdown.style.display = "block";
+    }
+
+    // 🔹 Khi click vào input → luôn mở dropdown
+    courseInput.addEventListener("focus", function () {
+        courseDropdown.querySelectorAll("li").forEach(li => li.style.display = "block");
+        courseDropdown.style.display = "block";
     });
 
+    // 🔹 Khi nhập từ khóa
+    courseInput.addEventListener("input", function () {
+        filterCourseItems(this.value);
+    });
+
+    // 🔹 Khi chọn khóa học
     courseDropdown.addEventListener("click", function (e) {
-        if (e.target.tagName === "LI") {
+        if (e.target.tagName === "LI" && e.target !== noResultItem) {
             const selectedId = e.target.dataset.id;
             const selectedName = e.target.textContent.trim();
+
             currentCourseId = selectedId;
             courseInput.value = selectedName;
             courseDropdown.style.display = "none";
+            clearCourse.style.display = "inline";
             calendar.refetchEvents();
         }
     });
 
-    clearCourse.addEventListener("click", function () {
+    // 🔹 Khi bấm nút ❌ Clear
+    clearCourse.addEventListener("click", function (e) {
+        e.stopPropagation(); // Ngăn document.click ẩn dropdown
+
         currentCourseId = "all";
-        courseInput.value = "📚 Tất cả khóa học";
-        calendar.refetchEvents();
+        courseInput.value = "";
+        clearCourse.style.display = "none";
+
+        // Hiển thị lại toàn bộ danh sách
+        courseDropdown.querySelectorAll("li").forEach(li => li.style.display = "block");
+
+        // Hiện dropdown ngay
+        courseDropdown.style.display = "block";
+        courseInput.focus();
+
+        // Refetch lịch sau 1 chút
+        setTimeout(() => calendar.refetchEvents(), 150);
     });
 
-    document.addEventListener("click", function (e) {
-        if (!courseDropdown.contains(e.target) && e.target !== courseInput) {
-            courseDropdown.style.display = "none";
+    // 🔹 Click ra ngoài → ẩn dropdown & bỏ focus khỏi input
+    document.addEventListener("mousedown", function (e) {
+        const isInside =
+            courseDropdown.contains(e.target) ||
+            e.target === courseInput ||
+            e.target === clearCourse;
+
+        // Nếu click ra ngoài, ẩn dropdown sau 150ms
+        if (!isInside) {
+            setTimeout(() => {
+                courseDropdown.style.display = "none";
+                courseInput.blur(); // 👈 Bỏ con trỏ nháy
+            }, 150);
         }
     });
 
-    // ======= NÚT SỬA (CHO CẢ HAI LOẠI) =======
+
+
+
+    // =====================================================
+    // 🛠️ NÚT SỬA SỰ KIỆN
+    // =====================================================
     document.getElementById("btnEditEvent").addEventListener("click", function () {
         if (!currentEventId || !currentEventType) {
             alert("Không tìm thấy ID sự kiện!");
@@ -155,39 +211,28 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // ======= CẬP NHẬT LAYOUT =======
-        const sidebarToggle = document.getElementById("toggleSidebar");
-        const fullBtn = document.querySelector("[data-bs-toggle='fullscreen']"); // nếu có nút full screen
-        let resizeTimeout = null;
+    // =====================================================
+    // 🔄 CẬP NHẬT LAYOUT FULLCALENDAR KHI RESIZE / TOGGLE
+    // =====================================================
+    const sidebarToggle = document.getElementById("toggleSidebar");
+    const fullBtn = document.querySelector("[data-bs-toggle='fullscreen']");
+    let resizeTimeout = null;
 
-        // Khi toggle sidebar hoặc fullscreen
-        function forceCalendarResize() {
-            // Xóa timer cũ nếu có
-            if (resizeTimeout) clearTimeout(resizeTimeout);
-            // Đợi DOM ổn định hẳn rồi mới update
-            resizeTimeout = setTimeout(() => {
-                calendar.updateSize();
-            }, 600); // chờ 0.6s cho layout nở xong
+    function forceCalendarResize() {
+        if (resizeTimeout) clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            calendar.updateSize();
+        }, 600);
+    }
+
+    if (sidebarToggle) sidebarToggle.addEventListener("click", forceCalendarResize);
+    if (fullBtn) fullBtn.addEventListener("click", forceCalendarResize);
+    window.addEventListener("resize", forceCalendarResize);
+
+    const observer = new MutationObserver(() => {
+        if (calendarEl.offsetParent !== null) {
+            calendar.updateSize();
         }
-
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener("click", forceCalendarResize);
-        }
-        if (fullBtn) {
-            fullBtn.addEventListener("click", forceCalendarResize);
-        }
-
-        // Khi resize màn hình
-        window.addEventListener("resize", () => {
-            forceCalendarResize();
-        });
-
-        // Trường hợp FullCalendar đang bị ẩn (display:none) → render lại khi hiện
-        const observer = new MutationObserver(() => {
-            if (calendarEl.offsetParent !== null) {
-                calendar.updateSize();
-            }
-        });
-        observer.observe(document.body, { attributes: true, childList: true, subtree: true });
-
+    });
+    observer.observe(document.body, { attributes: true, childList: true, subtree: true });
 });

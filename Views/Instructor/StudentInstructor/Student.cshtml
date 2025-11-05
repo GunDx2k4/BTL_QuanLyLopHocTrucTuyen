@@ -1,4 +1,4 @@
-@model IEnumerable<BTL_QuanLyLopHocTrucTuyen.Models.Enrollment>
+@model IEnumerable<dynamic>
 @using BTL_QuanLyLopHocTrucTuyen.Models.Enums
 
 @{
@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="~/css/Instructor/Student/Student.css" asp-append-version="true" />
 
 <div class="content-main student-page">
+
     <!-- 🔹 Header -->
     <div class="header-student d-flex justify-content-between align-items-center mb-4">
         <h4 class="fw-bold text-primary mb-0">
@@ -37,7 +38,6 @@
             </ul>
         </div>
 
-
         <select id="statusFilter" name="status" class="form-select form-select-sm" style="width:200px;">
             <option value="">Tất cả trạng thái</option>
             <option value="Đang học" selected="@(ViewBag.SelectedStatus == "Đang học")">Đang học</option>
@@ -45,7 +45,6 @@
             <option value="Nghỉ học" selected="@(ViewBag.SelectedStatus == "Nghỉ học")">Nghỉ học</option>
         </select>
     </div>
-
 
     <!-- 🔹 Thống kê nhanh -->
     <div class="overview-grid mb-4">
@@ -72,7 +71,6 @@
         </div>
     </div>
 
-
     <!-- 🔹 Bảng danh sách học viên -->
     <div class="table-responsive shadow-sm">
         <table class="table table-hover align-middle">
@@ -87,46 +85,46 @@
                     <th class="text-center">Thao tác</th>
                 </tr>
             </thead>
+
             <tbody id="studentTableBody">
                 @if (Model != null && Model.Any())
                 {
-                    foreach (var e in Model)
+                    foreach (var s in Model)
                     {
-                        var student = e.User;
-                        <tr>
-                            <td>@student.FullName</td>
-                            <td>@student.Email</td>
-                            <td>@e.Course?.Name</td>
-                            <td>
-                                @{
-                                    string statusText = "";
-                                    string colorClass = "";
+                        string statusText = "";
+                        string colorClass = "";
 
-                                    switch (e.Status)
-                                    {
-                                        case EnrollmentStatus.Enrolled:
-                                            statusText = "Đang học";
-                                            colorClass = "text-success fw-semibold";
-                                            break;
-                                        case EnrollmentStatus.Completed:
-                                            statusText = "Hoàn thành";
-                                            colorClass = "text-muted";
-                                            break;
-                                        case EnrollmentStatus.Dropped:
-                                            statusText = "Nghỉ học";
-                                            colorClass = "text-danger";
-                                            break;
-                                        default:
-                                            statusText = "Không rõ";
-                                            colorClass = "text-secondary";
-                                            break;
-                                    }
-                                }
-                                <span class="@colorClass">@statusText</span>
-                            </td>
+                        // ép kiểu Enum để xác định trạng thái
+                        switch ((EnrollmentStatus)s.Status)
+                        {
+                            case EnrollmentStatus.Enrolled:
+                                statusText = "Đang học";
+                                colorClass = "text-success fw-semibold";
+                                break;
+                            case EnrollmentStatus.Completed:
+                                statusText = "Hoàn thành";
+                                colorClass = "text-muted";
+                                break;
+                            case EnrollmentStatus.Dropped:
+                                statusText = "Nghỉ học";
+                                colorClass = "text-danger";
+                                break;
+                            default:
+                                statusText = "Không rõ";
+                                colorClass = "text-secondary";
+                                break;
+                        }
+
+                        <tr>
+                            <td>@s.FullName</td>
+                            <td>@s.Email</td>
+                            <td>@s.CourseName</td>
+                            <td>@($"{s.SubmittedCount}/{s.TotalAssignments}")</td>
+                            <td>@s.AverageScore</td>
+                            <td><span class="@colorClass">@statusText</span></td>
                             <td class="text-center">
-                                <a asp-controller="StudentInstructor" asp-action="DetailStudent" asp-route-id="@student.Id"
-                                class="btn btn-outline-primary btn-sm">
+                                <a asp-controller="StudentInstructor" asp-action="DetailStudent"
+                                   asp-route-id="@s.Id" class="btn btn-outline-primary btn-sm">
                                     <i class="bi bi-eye"></i>
                                 </a>
                             </td>
@@ -136,11 +134,12 @@
                 else
                 {
                     <tr>
-                        <td colspan="8" class="text-center text-muted py-4">Chưa có học viên nào được ghi danh.</td>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            Chưa có học viên nào được ghi danh.
+                        </td>
                     </tr>
                 }
             </tbody>
-
         </table>
     </div>
 </div>

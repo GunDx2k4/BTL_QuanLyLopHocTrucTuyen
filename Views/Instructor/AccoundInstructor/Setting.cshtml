@@ -1,0 +1,39 @@
+@model BTL_QuanLyLopHocTrucTuyen.Models.User
+@{
+    ViewData["Title"] = "Cài đặt tài khoản";
+    Layout = "~/Views/Instructor/Shared/_InstructorLayout.cshtml";
+}
+
+<div class="content-main setting-page">
+    <h4 class="fw-bold text-primary mb-4">
+        <i class="bi bi-gear-fill me-2"></i>Cài đặt tài khoản
+    </h4>
+
+    <div id="alertPlaceholder"></div>
+
+    <div class="card shadow-sm p-4">
+        <form id="settingForm" asp-action="Setting" method="post">
+            <input type="hidden" name="id" value="@Model.Id" />
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Email</label>
+                <input type="email" class="form-control" value="@Model.Email" readonly />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Tên hiển thị</label>
+                <input type="text" name="fullName" class="form-control" value="@Model.FullName" required />
+            </div>
+
+            <div class="text-end">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save me-1"></i> Lưu thay đổi
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/Instructor/Accound/Setting.js" asp-append-version="true"></script>
+}

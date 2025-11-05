@@ -25,9 +25,11 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
             var instructorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (instructorId == null)
                 return Redirect("/Home/Login");
+
             var redirect = EnsureCourseSelected();
             if (redirect != null) return redirect;
-            // ✅ Nếu không truyền courseId thì lấy từ Claim
+
+            // 🔹 Nếu không có courseId → lấy từ Claim
             if (!courseId.HasValue)
             {
                 var courseIdClaim = User.FindFirst("CurrentCourseId")?.Value;
@@ -35,6 +37,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                     courseId = Guid.Parse(courseIdClaim);
             }
 
+            // 🔹 Lấy danh sách khóa học giảng viên đang dạy
             var courses = await _context.Courses
                 .Where(c => c.InstructorId.ToString() == instructorId)
                 .OrderByDescending(c => c.CreatedAt)
@@ -45,6 +48,7 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
             ViewBag.CurrentCourseName = courses.FirstOrDefault(c => c.Id == courseId)?.Name ?? "Tất cả khóa học";
             ViewBag.SelectedStatus = status;
 
+            // 🔹 Lấy danh sách enrollment (ghi danh)
             var enrollments = _context.Enrollments
                 .Include(e => e.User)
                 .Include(e => e.Course)
@@ -63,53 +67,63 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                     "Nghỉ học" => EnrollmentStatus.Dropped,
                     _ => null
                 };
-
                 if (enumStatus.HasValue)
                     enrollments = enrollments.Where(e => e.Status == enumStatus.Value);
             }
 
-
             var enrollmentList = await enrollments.ToListAsync();
 
-            // ✅ Tính toán số bài nộp và điểm trung bình
-            var students = enrollmentList.Select(e =>
+            // 🔹 Danh sách kết quả cho view
+            var studentData = new List<dynamic>();
+
+            foreach (var e in enrollmentList)
             {
                 var studentId = e.UserId;
                 var courseIdValue = e.CourseId;
 
-                var submissions = _context.Submissions
+                // ✅ Lấy danh sách bài nộp của học viên này trong khóa học
+                var submissions = await _context.Submissions
                     .Include(s => s.Assignment)
                     .ThenInclude(a => a.Lesson)
-                    .Where(s => s.StudentId == studentId &&
-                                s.Assignment.Lesson.CourseId == courseIdValue);
+                    .Where(s => s.StudentId == studentId && s.Assignment.Lesson.CourseId == courseIdValue)
+                    .ToListAsync();
 
-                var submittedCount = submissions.Count();
-                var totalAssignments = _context.Assignments
+                var submittedCount = submissions.Count;
+
+                // ✅ Tổng số bài tập của khóa học
+                var totalAssignments = await _context.Assignments
                     .Include(a => a.Lesson)
-                    .Count(a => a.Lesson.CourseId == courseIdValue);
-                var avgGrade = submissions.Average(s => (double?)s.Grade) ?? 0;
+                    .CountAsync(a => a.Lesson.CourseId == courseIdValue);
 
-                return new
+                // ✅ Điểm trung bình: chỉ tính các bài đã chấm (Grade != null)
+                double avgGrade = 0;
+                if (submissions.Any(s => s.Grade.HasValue))
+                {
+                    avgGrade = submissions
+                        .Where(s => s.Grade.HasValue)
+                        .Average(s => (double)s.Grade!.Value);
+                }
+
+                studentData.Add(new
                 {
                     e.User.Id,
                     e.User.FullName,
                     e.User.Email,
-                    CourseName = e.Course.Name,
+                    CourseName = e.Course?.Name ?? "Không xác định",
                     Status = e.Status,
                     SubmittedCount = submittedCount,
                     TotalAssignments = totalAssignments,
                     AverageScore = Math.Round(avgGrade, 1)
-                };
-            }).ToList();
+                });
+            }
 
-            // ✅ Thống kê nhanh
-            var list = await enrollments.ToListAsync();
-            ViewBag.TotalStudents = list.Count;
-            ViewBag.ActiveCount = list.Count(e => e.Status == EnrollmentStatus.Enrolled);
-            ViewBag.QuitCount = list.Count(e => e.Status == EnrollmentStatus.Dropped);
+            // 🔹 Thống kê nhanh
+            ViewBag.TotalStudents = enrollmentList.Count;
+            ViewBag.ActiveCount = enrollmentList.Count(e => e.Status == EnrollmentStatus.Enrolled);
+            ViewBag.QuitCount = enrollmentList.Count(e => e.Status == EnrollmentStatus.Dropped);
 
-
-            return View("~/Views/Instructor/StudentInstructor/Student.cshtml",list);
+            // 🔹 Trả về view
+            return View("~/Views/Instructor/StudentInstructor/Student.cshtml", studentData);
         }
 
         [HttpGet]

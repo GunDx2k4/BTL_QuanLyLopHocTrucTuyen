@@ -33,22 +33,19 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
 
-            ViewBag.Courses = courses;
-            ViewBag.CurrentCourseId = courseId ?? GetCurrentCourseId();
+            var effectiveCourseId = courseId ?? GetCurrentCourseId();
 
-            // 🔹 Lấy danh sách bài tập thuộc khóa học hiện tại
+            ViewBag.Courses = courses;
+            ViewBag.CurrentCourseId = effectiveCourseId;
+
+            // 🔹 Lấy danh sách bài tập của khóa học hiện tại
             var assignments = await _context.Assignments
                 .Include(a => a.Lesson)
-                .Where(a => a.Lesson.CourseId == courseId)
+                .Where(a => effectiveCourseId.HasValue && a.Lesson.CourseId == effectiveCourseId.Value)
                 .OrderByDescending(a => a.CreatedAt)
                 .ToListAsync();
 
             ViewBag.Assignments = assignments;
-
-            // ✅ Nếu chưa chọn assignment thì mặc định chọn bài đầu tiên
-            if (!assignmentId.HasValue && assignments.Any())
-                assignmentId = assignments.First().Id;
-
             ViewBag.CurrentAssignmentId = assignmentId ?? Guid.Empty;
 
             // 🔹 Lấy danh sách bài nộp (Submissions)
@@ -59,24 +56,55 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
                         .ThenInclude(l => l.Course)
                 .AsQueryable();
 
-            if (courseId.HasValue)
-                submissionsQuery = submissionsQuery.Where(s => s.Assignment.Lesson.CourseId == courseId);
+            // ✅ Chỉ hiển thị bài nộp trong khóa học hiện tại
+            if (effectiveCourseId.HasValue)
+                submissionsQuery = submissionsQuery.Where(s => s.Assignment.Lesson.CourseId == effectiveCourseId.Value);
 
-            if (assignmentId.HasValue)
-                submissionsQuery = submissionsQuery.Where(s => s.AssignmentId == assignmentId);
+            // ✅ Nếu chọn bài tập cụ thể → lọc thêm theo assignmentId
+            if (assignmentId.HasValue && assignmentId.Value != Guid.Empty)
+                submissionsQuery = submissionsQuery.Where(s => s.AssignmentId == assignmentId.Value);
 
             var submissions = await submissionsQuery
                 .OrderByDescending(s => s.SubmittedAt)
                 .ToListAsync();
 
-            // 🔹 Gửi dữ liệu sang View
+            // 🔹 Trả dữ liệu về View
             return View("~/Views/Instructor/GradeInstructor/Grade.cshtml", submissions);
         }
 
         [HttpGet]
-        public IActionResult DetailGrade(Guid id)
+        public async Task<IActionResult> DetailGrade(Guid id)
         {
-            return View("~/Views/Instructor/GradeInstructor/DetailGrade.cshtml");
+            // 🔹 Lấy submission theo ID
+            var submission = await _context.Submissions
+                .Include(s => s.Student)
+                .Include(s => s.Assignment)
+                    .ThenInclude(a => a.Lesson)
+                        .ThenInclude(l => l.Course)
+                .FirstOrDefaultAsync(s => s.Id == id);
+
+            if (submission == null)
+                return NotFound();
+
+            // 🔹 Gửi dữ liệu sang View
+            return View("~/Views/Instructor/GradeInstructor/DetailGrade.cshtml", submission);
         }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateGrade(Guid id, float grade)
+        {
+            var submission = await _context.Submissions.FirstOrDefaultAsync(s => s.Id == id);
+            if (submission == null)
+                return NotFound();
+
+            submission.Grade = grade;
+
+            _context.Submissions.Update(submission);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "✅ Đã chấm điểm thành công!";
+            return RedirectToAction("DetailGrade", new { id });
+        }
+
     }
 }
