@@ -1,32 +1,23 @@
-/* ===========================
-   🔍 Ô tìm kiếm khóa học
-=========================== */
-.filter-course {
-    position: relative;
-    min-width: 260px;
-}
-
-.filter-course .input-wrapper {
-    position: relative;
-}
+/* ======================= 🔍 Ô tìm kiếm khóa học ======================= */
+.filter-course { position: relative; min-width: 260px; }
+.filter-course .input-wrapper { position: relative; }
 
 #courseSearch {
     border-radius: 12px;
     border: 1.8px solid #cfd8dc;
     padding: 10px 36px 10px 14px;
     font-size: 15px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     transition: all 0.25s ease;
-    background-color: #ffffff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
-
 #courseSearch:focus {
     border-color: #2196f3;
-    box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.15);
+    box-shadow: 0 0 0 4px rgba(33,150,243,0.15);
     outline: none;
 }
 
-/* ❌ Nút clear (x) */
+/* ❌ Nút xóa */
 .btn-clear {
     position: absolute;
     right: 10px;
@@ -38,30 +29,19 @@
     color: #aaa;
     cursor: pointer;
     display: none;
-    line-height: 1;
 }
+.btn-clear:hover { color: #e53935; }
+#courseSearch:not(:placeholder-shown) + .btn-clear { display: block; }
 
-.btn-clear:hover {
-    color: #e53935;
-}
-
-#courseSearch:not(:placeholder-shown) + .btn-clear {
-    display: block;
-}
-
-/* ===========================
-   📋 Dropdown danh sách khóa học
-=========================== */
+/* ======================= 📋 Dropdown danh sách khóa học ======================= */
 #courseDropdown {
     border-radius: 10px;
     background-color: #fff;
     border: 1px solid #e0e0e0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     margin-top: 4px;
     animation: fadeIn 0.15s ease-out;
 }
-
 #courseDropdown .list-group-item {
     font-size: 15px;
     padding: 10px 14px;
@@ -70,44 +50,27 @@
     cursor: pointer;
     transition: all 0.2s ease;
 }
-
-#courseDropdown .list-group-item:last-child {
-    border-bottom: none;
-}
-
+#courseDropdown .list-group-item:last-child { border-bottom: none; }
 #courseDropdown .list-group-item:hover {
     background-color: #f0f8ff;
     color: #1976d2;
 }
-
 #courseDropdown .active {
     background-color: #1976d2 !important;
     color: #fff !important;
     font-weight: 600;
 }
-
-/* ===========================
-   ✨ Hiệu ứng nhỏ
-=========================== */
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-5px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-
-/* ====== GRID TỔNG QUAN ====== */
+/* ======================= 🧮 GRID TỔNG QUAN ======================= */
 .overview-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1.2rem;
 }
-
 .stat-card {
     display: flex;
     align-items: center;
@@ -118,27 +81,13 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     transition: transform .2s ease, box-shadow .2s ease;
 }
-
 .stat-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
-
-.stat-card i {
-    font-size: 1.8rem;
-    opacity: 0.9;
-}
-
-.stat-card .label {
-    font-size: 0.9rem;
-    opacity: 0.85;
-    margin-bottom: 4px;
-}
-
-.stat-card .value {
-    font-size: 1.4rem;
-    font-weight: 700;
-}
+.stat-card i { font-size: 1.8rem; opacity: 0.9; }
+.stat-card .label { font-size: 0.9rem; opacity: 0.85; margin-bottom: 4px; }
+.stat-card .value { font-size: 1.4rem; font-weight: 700; }
 
 /* ====== MÀU ====== */
 .bg-gradient-primary { background: linear-gradient(135deg, #007bff, #4dabf7); }
@@ -147,20 +96,7 @@
 .bg-gradient-danger  { background: linear-gradient(135deg, #dc3545, #ff6b6b); }
 
 /* ====== BIỂU ĐỒ ====== */
-.chart-card {
-    background: #fff;
-    border-radius: 14px;
-}
-
-.table-section table {
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.table thead {
-    font-weight: 600;
-}
-
-.table tbody tr:hover {
-    background-color: #f8f9fa;
-}
+.chart-card { background: #fff; border-radius: 14px; }
+.table-section table { border-radius: 12px; overflow: hidden; }
+.table thead { font-weight: 600; }
+.table tbody tr:hover { background-color: #f8f9fa; }

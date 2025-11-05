@@ -3,7 +3,7 @@
     display: flex;
     gap: 25px;
     height: 100%;
-    padding: 25px;
+    padding: 10px;
     background: #fff;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
@@ -16,7 +16,7 @@
     background-color: #fafafa;
     border-radius: 12px;
     padding: 10px 15px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
 }
 
 .section-title {

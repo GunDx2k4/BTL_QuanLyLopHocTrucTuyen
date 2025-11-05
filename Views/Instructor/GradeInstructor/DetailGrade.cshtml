@@ -1,3 +1,5 @@
+@model BTL_QuanLyLopHocTrucTuyen.Models.Submission
+
 @{
     ViewData["Title"] = "Chi tiết điểm số";
     Layout = "~/Views/Instructor/Shared/_InstructorLayout.cshtml";
@@ -11,7 +13,7 @@
         <h4 class="fw-bold text-primary mb-0">
             <i class="bi bi-clipboard-data me-2"></i>Chi tiết điểm số
         </h4>
-        <a asp-controller="GradeInstructor" asp-action="Index" class="btn btn-outline-secondary">
+        <a asp-controller="GradeInstructor" asp-action="Grade" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left-circle me-1"></i> Quay lại danh sách
         </a>
     </div>
@@ -21,20 +23,19 @@
         <div class="card info-card">
             <div class="card-body">
                 <h5 class="card-title"><i class="bi bi-person-circle me-2"></i>Thông tin học viên</h5>
-                <p><strong>👤 Họ tên:</strong> Nguyễn Văn A</p>
-                <p><strong>🎓 Mã sinh viên:</strong> 21IT123</p>
-                <p><strong>📧 Email:</strong> nguyenvana@example.com</p>
-                <p><strong>🏫 Lớp:</strong> CNTT K21A</p>
+                <p><strong>👤 Họ tên:</strong> @Model.Student?.FullName</p>
+                <p><strong>📧 Email:</strong> @Model.Student?.Email</p>
             </div>
         </div>
 
         <div class="card info-card">
             <div class="card-body">
                 <h5 class="card-title"><i class="bi bi-journal-check me-2"></i>Thông tin bài tập</h5>
-                <p><strong>📘 Khóa học:</strong> Lập trình Web ASP.NET</p>
-                <p><strong>📝 Bài tập:</strong> Bài tập 1 - Controller</p>
-                <p><strong>📅 Ngày nộp:</strong> 29/10/2025</p>
-                <p><strong>⏰ Hạn nộp:</strong> 30/10/2025</p>
+                <p><strong>📘 Khóa học:</strong> @Model.Assignment?.Lesson?.Course?.Name</p>
+                <p><strong>📝 Bài tập:</strong> @Model.Assignment?.Title</p>
+                <p><strong>📅 Ngày nộp:</strong> @Model.SubmittedAt.ToString("dd/MM/yyyy")</p>
+                <p><strong>⏰ Hạn nộp:</strong> 
+                    @Model.Assignment?.AvailableUntil?.ToString("dd/MM/yyyy")</p>
             </div>
         </div>
     </div>
@@ -44,24 +45,57 @@
         <div class="card grade-card shadow-sm">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="card-title mb-0"><i class="bi bi-bar-chart-line me-2"></i>Kết quả đánh giá</h5>
-                    <span class="badge bg-success fs-5 px-3 py-2">9.0</span>
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-bar-chart-line me-2"></i>Kết quả đánh giá
+                    </h5>
+
+                    <span id="gradeDisplay">
+                        @if (Model.Grade.HasValue)
+                        {
+                            <span class="badge bg-success fs-5 px-3 py-2">@Model.Grade</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning text-dark fs-6 px-3 py-2">Chưa chấm</span>
+                        }
+                    </span>
                 </div>
 
-                <div class="grade-info">
-                    <p><strong>📄 Nhận xét của giảng viên:</strong></p>
-                    <p class="comment">
-                        Bài làm rất tốt, trình bày rõ ràng, có áp dụng đầy đủ mô hình MVC.
-                        Nên bổ sung thêm phần xử lý lỗi khi submit form để hoàn thiện hơn.
-                    </p>
+                <!-- 🟢 Form nhập điểm (ẩn ban đầu) -->
+                <div id="gradeForm" style="display:none;">
+                    <form asp-action="UpdateGrade" method="post">
+                        <input type="hidden" name="id" value="@Model.Id" />
 
-                    <hr />
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Điểm</label>
+                            <input type="number" name="grade" class="form-control" step="0.1"
+                                min="0" max="10" value="@(Model.Grade ?? 0)">
+                        </div>
 
-                    <p><strong>📂 Tệp bài nộp:</strong>
-                        <a href="#" class="link-primary text-decoration-none">
-                            <i class="bi bi-paperclip"></i> OOP_Assignment1.zip
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle me-1"></i> Lưu
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="cancelGrade">
+                                <i class="bi bi-x-circle me-1"></i> Hủy
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 🟢 Hiển thị thông tin -->
+                <div id="gradeInfo">
+                    <p><strong>📄 Tệp bài nộp:</strong></p>
+                    @if (!string.IsNullOrEmpty(Model.FileUrl))
+                    {
+                        <a href="@Model.FileUrl" target="_blank" class="link-primary text-decoration-none">
+                            <i class="bi bi-paperclip"></i> @System.IO.Path.GetFileName(Model.FileUrl)
                         </a>
-                    </p>
+                    }
+                    else
+                    {
+                        <p class="text-muted fst-italic">Không có tệp đính kèm.</p>
+                    }
                 </div>
             </div>
         </div>
@@ -69,11 +103,17 @@
 
     <!-- 🔹 Nút hành động -->
     <div class="action-buttons mt-4 d-flex justify-content-end gap-3">
-        <button class="btn btn-outline-secondary">
-            <i class="bi bi-download me-1"></i> Tải bài nộp
-        </button>
-        <button class="btn btn-primary">
-            <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa điểm
+        @if (!string.IsNullOrEmpty(Model.FileUrl))
+        {
+            <a href="@Model.FileUrl" class="btn btn-outline-secondary" target="_blank">
+                <i class="bi bi-download me-1"></i> Tải bài nộp
+            </a>
+        }
+        <button id="btnEditGrade" class="btn btn-primary">
+            <i class="bi bi-pencil-square me-1"></i> Chấm điểm
         </button>
     </div>
 </div>
+@section Scripts {
+    <script src="~/js/Instructor/Grade/DetailGrade.js" asp-append-version="true"></script>
+}

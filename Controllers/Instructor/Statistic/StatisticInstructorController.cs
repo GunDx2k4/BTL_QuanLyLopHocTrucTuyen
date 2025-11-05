@@ -2,11 +2,12 @@ using Microsoft.AspNetCore.Mvc;
 using BTL_QuanLyLopHocTrucTuyen.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using BTL_QuanLyLopHocTrucTuyen.Core.Controllers;
 
 namespace BTL_QuanLyLopHocTrucTuyen.Controllers
 {
     [Route("Instructor/[action]")]
-    public class StatisticInstructorController : Controller
+    public class StatisticInstructorController : BaseInstructorController
     {
         private readonly ApplicationDbContext _context;
 
@@ -16,40 +17,73 @@ namespace BTL_QuanLyLopHocTrucTuyen.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Statistic()
+        public async Task<IActionResult> Statistic(Guid? courseId)
         {
-            // ✅ Lấy ID giảng viên đăng nhập
             var instructorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (instructorId == null)
                 return Redirect("/Home/Login");
 
-            // ✅ Lấy khóa học hiện tại trong Claim (nếu có)
-            var courseIdClaim = User.FindFirst("CurrentCourseId")?.Value;
+            var redirect = EnsureCourseSelected();
+            if (redirect != null) return redirect;
 
-            // ✅ Lấy toàn bộ các khóa học của giảng viên này
+            // 🔹 Lấy danh sách khóa học
             var courses = await _context.Courses
-                .Include(c => c.Tenant)
                 .Where(c => c.InstructorId.ToString() == instructorId)
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
 
             ViewBag.Courses = courses;
+            ViewBag.CourseCount = courses.Count;
 
-            // ✅ Nếu có courseId trong claim → highlight
-            if (!string.IsNullOrEmpty(courseIdClaim) && Guid.TryParse(courseIdClaim, out var currentId))
-            {
-                ViewBag.CurrentCourseId = currentId;
-                var currentCourse = courses.FirstOrDefault(c => c.Id == currentId);
-                ViewBag.CurrentCourseName = currentCourse?.Name ?? "Chưa chọn khóa học";
-            }
-            else
-            {
-                ViewBag.CurrentCourseId = Guid.Empty;
-                ViewBag.CurrentCourseName = "Chưa chọn khóa học";
-            }
+            // 🔹 Lấy khóa học hiện tại
+            var currentCourseId = courseId ?? GetCurrentCourseId();
+            var currentCourse = courses.FirstOrDefault(c => c.Id == currentCourseId);
+            ViewBag.CurrentCourseId = currentCourseId;
+            ViewBag.CurrentCourseName = currentCourse?.Name ?? "Chưa chọn khóa học";
 
-            // Hiện tại demo tĩnh, sau này có thể load thống kê thực tế
+            if (currentCourse == null)
+                return View("~/Views/Instructor/StatisticInstructor/Statistic.cshtml");
+
+            // 🔹 Lấy danh sách bài tập và bài nộp của khóa học
+            var assignments = await _context.Assignments
+                .Include(a => a.Lesson)
+                .Where(a => a.Lesson.CourseId == currentCourseId)
+                .ToListAsync();
+
+            var submissions = await _context.Submissions
+                .Include(s => s.Student)
+                .Include(s => s.Assignment)
+                    .ThenInclude(a => a.Lesson)
+                .Where(s => s.Assignment.Lesson.CourseId == currentCourseId)
+                .ToListAsync();
+
+            var studentCount = await _context.Enrollments
+                .CountAsync(e => e.CourseId == currentCourseId);
+
+            // 🔹 Thống kê tổng quan
+            var submittedCount = submissions.Count;
+            var notSubmittedCount = Math.Max(studentCount - submittedCount, 0);
+            var lateCount = submissions.Count(s => s.Assignment.AvailableUntil.HasValue && s.SubmittedAt > s.Assignment.AvailableUntil);
+
+            ViewBag.SubmittedCount = submittedCount;
+            ViewBag.NotSubmittedCount = notSubmittedCount;
+            ViewBag.LateCount = lateCount;
+
+            // 🔹 Dữ liệu chi tiết theo từng bài tập
+            var assignmentStats = assignments.Select(a => new
+            {
+                a.Title,
+                Submitted = submissions.Count(s => s.AssignmentId == a.Id),
+                NotSubmitted = Math.Max(studentCount - submissions.Count(s => s.AssignmentId == a.Id), 0),
+                Late = submissions.Count(s => s.AssignmentId == a.Id && a.AvailableUntil.HasValue && s.SubmittedAt > a.AvailableUntil),
+                AvgGrade = submissions.Where(s => s.AssignmentId == a.Id && s.Grade.HasValue).Select(s => s.Grade.Value).DefaultIfEmpty(0).Average()
+            }).ToList();
+
+            ViewBag.AssignmentStats = assignmentStats;
+
             return View("~/Views/Instructor/StatisticInstructor/Statistic.cshtml");
         }
+
+
     }
 }

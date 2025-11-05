@@ -1,7 +1,6 @@
 /* ===== Tổng thể ===== */
 .content-main {
     background: #ffffff;
-    
     padding: 25px 30px;
     border-radius: 10px;
     box-shadow: 0 3px 8px rgba(0,0,0,0.1);
@@ -32,19 +31,25 @@
 .search-box {
     display: flex;
     align-items: center;
-    background: #f1f3f5;
-    border: 1px solid #dee2e6;
-    border-radius: 25px;
-    padding: 6px 12px;
+    position: relative;
     width: 250px;
 }
-.search-box i { color: #6c757d; }
+.search-box i { 
+    color: #6c757d;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888; }
 .search-input {
     border: none;
     outline: none;
     background: transparent;
     flex: 1;
-    padding-left: 6px;
+    padding: 8px 36px 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 15px;
 }
 
 /* Filter */
@@ -67,10 +72,11 @@
     align-items: center;
     gap: 6px;
     transition: 0.2s;
+    font-weight: 500;
 }
 .btn-add:hover {
     background-color: #0b5ed7;
-    transform: scale(1.05);
+    transform: scale(1.03);
 }
 
 /* ===== Danh sách theo nhóm bài học ===== */
@@ -78,7 +84,6 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    margin-top: 20px;
 }
 
 /* ===== Header của mỗi Lesson ===== */

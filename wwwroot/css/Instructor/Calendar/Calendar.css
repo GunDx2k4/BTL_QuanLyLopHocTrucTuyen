@@ -1,9 +1,15 @@
+/* =============================== */
+/* 📅 LỊCH GIẢNG DẠY & HẠN NỘP */
+/* =============================== */
+
 #calendar {
-    background: #fff;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
+
+/* Modal */
 #eventModal .modal-content {
   border-radius: 12px;
   box-shadow: 0 5px 15px rgba(0,0,0,0.2);
@@ -12,31 +18,274 @@
   margin-bottom: 8px;
   font-size: 15px;
 }
+
+/* --------------------------- */
+/* Bộ lọc khóa học */
+.filter-course {
+  display: flex;
+  flex-direction: column; /* 🔹 Đặt dọc cho label + input */
+  gap: 6px;
+  position: relative; /* 🔹 Làm cha cho dropdown */
+  margin-top: 12px;
+}
+
+.filter-course .text-search {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-bottom: 0;
+  color: #444;
+  width: 100%;
+}
+
+.filter-course .input-wrapper {
+  width: 100%;
+  position: relative;
+}
+
+.filter-course input[type="text"] {
+  height: 42px;
+  font-size: 15px;
+  border-radius: 8px;
+  padding: 8px 36px 8px 12px;
+  border: 1px solid #ccc;
+}
+
+.filter-course input[type="text"]:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+  outline: none;
+}
+
 .filter-course .btn-clear {
   position: absolute;
   right: 10px;
-  top: 1px;
+  top: 4px;
   border: none;
   background: transparent;
   font-size: 1.2rem;
   color: #888;
   cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s;
 }
 
 .filter-course .btn-clear:hover {
   color: #dc3545;
 }
 
+/* --------------------------- */
+/* Dropdown */
+#courseDropdown {
+  position: absolute;
+  top: calc(100% + 4px); /* 🔹 Sát dưới input */
+  left: 0;
+  width: 100%;
+  border-radius: 8px;
+  background-color: #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  z-index: 2000;
+  transition: all 0.15s ease-in-out;
+  display: none;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+}
+
 #courseDropdown li {
+  padding: 10px 14px;
+  font-size: 15px;
+}
+
+#courseDropdown li.active {
+  background-color: #0d6efd;
+  color: #fff;
+  font-weight: 500;
+}
+
+#courseDropdown li:hover:not(.active) {
+  background-color: #e9ecef;
   cursor: pointer;
 }
-#courseDropdown li:hover {
-  background-color: #e9ecef;
+
+/* ========================= */
+/* 🎨 FULLCALENDAR TOOLBAR */
+/* ========================= */
+
+.fc-header-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
+.fc-toolbar-chunk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
+/* Nút điều hướng (prev, next, today) */
+.fc-button {
+  background-color: #f8f9fa !important;
+  border: 1px solid #ced4da !important;
+  color: #333 !important;
+  font-size: 14px !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  transition: all 0.15s ease-in-out;
+}
+
+.fc-button:hover {
+  background-color: #e9ecef !important;
+  color: #0d6efd !important;
+  border-color: #0d6efd !important;
+}
+
+.fc-button-primary {
+  background-color: #0d6efd !important;
+  border-color: #0d6efd !important;
+  color: #fff !important;
+}
+
+.fc-button-primary:hover {
+  background-color: #0b5ed7 !important;
+}
+
+/* Nút đang được chọn (tháng / tuần / ngày) */
+.fc-button-active {
+  background-color: #0d6efd !important;
+  color: #fff !important;
+  border-color: #0d6efd !important;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+}
+
+/* Tiêu đề tháng */
 .fc-toolbar-title {
-    font-size: 1.4rem;
-    font-weight: 600;
-    color: #333;
+  font-size: 1.3rem !important;
+  font-weight: 600;
+  color: #333;
+  text-transform: capitalize;
+}
+
+/* Nút "Hôm nay" */
+.fc-today-button {
+  font-weight: 500 !important;
+}
+
+/* Ẩn focus thô xấu */
+.fc-button:focus {
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+  outline: none !important;
+}
+
+/* =============================== */
+/* 📱 MEDIA QUERY RESPONSIVE */
+/* =============================== */
+
+/* Tablet ngang (max 1024px) */
+@media (max-width: 1024px) {
+  #calendar {
+    padding: 16px;
+  }
+
+  .filter-course {
+    gap: 4px;
+  }
+
+  .filter-course .text-search {
+    font-size: 1rem;
+  }
+
+  .filter-course input[type="text"] {
+    font-size: 14px;
+    height: 40px;
+  }
+
+  #courseDropdown li {
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+}
+
+/* Tablet dọc & mobile lớn (max 768px) */
+@media (max-width: 768px) {
+  .filter-course {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-course .text-search {
+    font-size: 0.95rem;
+    text-align: left;
+  }
+
+  .filter-course input[type="text"] {
+    font-size: 14px;
+    height: 38px;
+  }
+
+  .filter-course .btn-clear {
+    top: 3px;
+    font-size: 1rem;
+  }
+
+  #courseDropdown {
+    max-height: 200px;
+  }
+
+  #courseDropdown li {
+    font-size: 13.5px;
+    padding: 8px 10px;
+  }
+
+  .fc-header-toolbar {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .fc-toolbar-chunk {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .fc-toolbar-title {
+    font-size: 1.1rem !important;
+  }
+}
+
+/* Mobile nhỏ (max 480px) */
+@media (max-width: 480px) {
+  #calendar {
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .filter-course {
+    margin-top: 8px;
+  }
+
+  .filter-course .text-search {
+    font-size: 0.9rem;
+  }
+
+  .filter-course input[type="text"] {
+    font-size: 13px;
+    height: 36px;
+  }
+
+  #courseDropdown li {
+    font-size: 13px;
+    padding: 6px 8px;
+  }
+
+  #eventModal .modal-body p {
+    font-size: 14px;
+  }
+
+  #eventModal .modal-content {
+    border-radius: 8px;
+  }
 }
